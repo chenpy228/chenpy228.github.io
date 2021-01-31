@@ -1,0 +1,741 @@
+
+ <!DOCTYPE HTML>
+<html lang="zh-CN">
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="UTF-8">
+  
+    <title>超级码力</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1,user-scalable=no">
+    
+    <meta name="author" content="Pele Chen">
+    
+
+    
+    <meta name="description" content="80&apos;s coder">
+<meta property="og:type" content="website">
+<meta property="og:title" content="超级码力">
+<meta property="og:url" content="http://supercoder.xyz/page/2/index.html">
+<meta property="og:site_name" content="超级码力">
+<meta property="og:description" content="80&apos;s coder">
+<meta property="og:locale" content="zh-CN">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="超级码力">
+<meta name="twitter:description" content="80&apos;s coder">
+<meta name="twitter:creator" content="@chenpy228">
+
+    
+    <link rel="alternative" href="/atom.xml" title="超级码力" type="application/atom+xml">
+    
+    
+    <link rel="icon" href="/img/favicon.ico">
+    
+    
+    <link rel="apple-touch-icon" href="/img/jacman.jpg">
+    <link rel="apple-touch-icon-precomposed" href="/img/jacman.jpg">
+    
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+</html>
+  <body>
+    <header>
+      
+<div>
+		
+			<div id="imglogo">
+				<a href="/"><img src="/img/logo.svg" alt="超级码力" title="超级码力"/></a>
+			</div>
+			
+			<div id="textlogo">
+				<h1 class="site-name"><a href="/" title="超级码力">超级码力</a></h1>
+				<h2 class="blog-motto">Stay hungry, stay foolish!</h2>
+			</div>
+			<div class="navbar"><a class="navbutton navmobile" href="#" title="菜单">
+			</a></div>
+			<nav class="animated">
+				<ul>
+					<ul>
+					 
+						<li><a href="/">首页</a></li>
+					
+						<li><a href="/archives">归档</a></li>
+					
+						<li><a href="/command">命令</a></li>
+					
+						<li><a href="/about">关于</a></li>
+					
+					<li>
+ 					
+					<form class="search" action="/search/index.html" method="get" accept-charset="utf-8">
+						<label>Search</label>
+						<input type="search" id="search" autocomplete="off" name="q" maxlength="20" placeholder="搜索" />
+					</form>
+					
+					</li>
+				</ul>
+			</nav>			
+</div>
+    </header>
+    <div id="container">
+      <div id="main">
+
+   
+    
+    <article class="post-expand post" itemprop="articleBody"> 
+        <header class="article-info clearfix">
+  <h1 itemprop="name">
+    
+      <a href="/2019/08/25/hit-refresh/" title="《刷新》读书笔记" itemprop="url">《刷新》读书笔记</a>
+  </h1>
+  <p class="article-author">By
+       
+		<a href="/about" title="Pele Chen" target="_blank" itemprop="author">Pele Chen</a>
+		
+  <p class="article-time">
+    <time datetime="2019-08-25T02:52:00.000Z" itemprop="datePublished"> 发表于 Aug 25 2019</time>
+    
+  </p>
+</header>
+    <div class="article-content">
+        
+        <img src="/img/hit-refresh/cover.jpg" class="img-topic">
+
+<p>曾经一度以为，微软会像摩托罗拉、柯达一样，日薄西山，没想到在第三任CEO纳德拉的带领下竟然获得重生，他做了什么，促使这头大象翩翩起舞？带着这个问题，最近几天阅读了他的第一部著作《刷新》（英文名《Hit Refresh》）。</p>
+        
+        
+        <p class="article-more-link">
+          
+            <a href="/2019/08/25/hit-refresh/#more">Read More</a>
+          
+       </p>
+    </div>
+    <footer class="article-footer clearfix">
+<div class="article-catetags">
+
+<div class="article-categories">
+  <span></span>
+  <a class="article-category-link" href="/categories/diary/">日记</a>
+</div>
+
+
+  <div class="article-tags">
+  
+  <span></span> <a href="/tags/同理心/">同理心</a><a href="/tags/成长型思维/">成长型思维</a>
+  </div>
+
+</div>
+
+
+
+
+<div class="comments-count">
+	
+</div>
+
+</footer>
+
+
+    </article>
+
+
+
+
+
+
+   
+    
+    <article class="post-expand post" itemprop="articleBody"> 
+        <header class="article-info clearfix">
+  <h1 itemprop="name">
+    
+      <a href="/2019/06/08/how-to-merge-multi-etcd-clusters-data/" title="如何合并多个etcd集群的数据" itemprop="url">如何合并多个etcd集群的数据</a>
+  </h1>
+  <p class="article-author">By
+       
+		<a href="/about" title="Pele Chen" target="_blank" itemprop="author">Pele Chen</a>
+		
+  <p class="article-time">
+    <time datetime="2019-06-08T12:46:00.000Z" itemprop="datePublished"> 发表于 Jun 8 2019</time>
+    
+  </p>
+</header>
+    <div class="article-content">
+        
+        <img src="/img/how-to-merge-multi-etcd-clusters-data/etcd-logo.svg" class="img-topic">
+
+<p>如果多个etcd集群的键值不重复，能否将数据合并？能否像数据库一样，将数据从旧库导出，然后在新库插入就万事大吉呢？答案是不能，etcd并没有提供类似功能，倒是有个备份功能，但是多个集群的备份数据却无法直接合并到一起。难道只能写个循环，将老集群的数据遍历出来，然后再插入新集群吗？这样也太土了吧，于是开始在网上找各种资料，可总是无功而返，看来只能老老实实看etcd官方资料了。功夫不负有心人，终于找到一条类似命令make-mirror，这条命令可以实时将一个集群的数据备份到其他集群，感觉跟我上面的想法一致，那么它可以用来做数据合并吗？请看接下来的实验吧！</p>
+        
+        
+        <p class="article-more-link">
+          
+            <a href="/2019/06/08/how-to-merge-multi-etcd-clusters-data/#more">Read More</a>
+          
+       </p>
+    </div>
+    <footer class="article-footer clearfix">
+<div class="article-catetags">
+
+<div class="article-categories">
+  <span></span>
+  <a class="article-category-link" href="/categories/technology/">技术</a>
+</div>
+
+
+  <div class="article-tags">
+  
+  <span></span> <a href="/tags/etcd/">etcd</a>
+  </div>
+
+</div>
+
+
+
+
+<div class="comments-count">
+	
+</div>
+
+</footer>
+
+
+    </article>
+
+
+
+
+
+
+   
+    
+    <article class="post-expand post" itemprop="articleBody"> 
+        <header class="article-info clearfix">
+  <h1 itemprop="name">
+    
+      <a href="/2019/04/27/ai-cheatsheets/" title="AI速查图" itemprop="url">AI速查图</a>
+  </h1>
+  <p class="article-author">By
+       
+		<a href="/about" title="Pele Chen" target="_blank" itemprop="author">Pele Chen</a>
+		
+  <p class="article-time">
+    <time datetime="2019-04-27T12:42:00.000Z" itemprop="datePublished"> 发表于 Apr 27 2019</time>
+    
+  </p>
+</header>
+    <div class="article-content">
+        
+        <img src="/img/ai-cheatsheets/Numpy.png" class="img-topic">
+
+<p>在github上发现了一个<a href="https://github.com/kailashahirwar/cheatsheets-ai" target="_blank" rel="noopener">repo</a>，里面将常见机器学习python库的用法总结成了N张速查图，可以把这些图当做手册经常翻出来看看，加深记忆。PDF版可以从<a href="/img/ai-cheatsheets/All-Cheat-Sheets.pdf">这里</a>下载。</p>
+        
+        
+        <p class="article-more-link">
+          
+            <a href="/2019/04/27/ai-cheatsheets/#more">Read More</a>
+          
+       </p>
+    </div>
+    <footer class="article-footer clearfix">
+<div class="article-catetags">
+
+<div class="article-categories">
+  <span></span>
+  <a class="article-category-link" href="/categories/technology/">技术</a>
+</div>
+
+
+  <div class="article-tags">
+  
+  <span></span> <a href="/tags/Python/">Python</a><a href="/tags/机器学习/">机器学习</a>
+  </div>
+
+</div>
+
+
+
+
+<div class="comments-count">
+	
+</div>
+
+</footer>
+
+
+    </article>
+
+
+
+
+
+
+   
+    
+    <article class="post-expand post" itemprop="articleBody"> 
+        <header class="article-info clearfix">
+  <h1 itemprop="name">
+    
+      <a href="/2019/04/13/about-clustering/" title="聚类算法综述" itemprop="url">聚类算法综述</a>
+  </h1>
+  <p class="article-author">By
+       
+		<a href="/about" title="Pele Chen" target="_blank" itemprop="author">Pele Chen</a>
+		
+  <p class="article-time">
+    <time datetime="2019-04-13T14:26:00.000Z" itemprop="datePublished"> 发表于 Apr 13 2019</time>
+    
+  </p>
+</header>
+    <div class="article-content">
+        
+        <img src="/img/about-clustering/sklearn-clustering.png" class="img-topic">
+
+<p>聚类是机器学习中一种重要的无监督算法，它试图将数据集中的样本划分为若干个通常不相交的子集，每个子集成为一个“簇”（cluster），理论上来说，每一簇对应一个潜在的概念，但这个概念事先并不知道，需要使用者来把握。本文是常见聚类算法的综述，为了加深理解，大部分算法配有动图。</p>
+        
+        
+        <p class="article-more-link">
+          
+            <a href="/2019/04/13/about-clustering/#more">Read More</a>
+          
+       </p>
+    </div>
+    <footer class="article-footer clearfix">
+<div class="article-catetags">
+
+<div class="article-categories">
+  <span></span>
+  <a class="article-category-link" href="/categories/technology/">技术</a>
+</div>
+
+
+  <div class="article-tags">
+  
+  <span></span> <a href="/tags/Python/">Python</a><a href="/tags/机器学习/">机器学习</a><a href="/tags/聚类/">聚类</a><a href="/tags/sklearn/">sklearn</a>
+  </div>
+
+</div>
+
+
+
+
+<div class="comments-count">
+	
+</div>
+
+</footer>
+
+
+    </article>
+
+
+
+
+
+
+   
+    
+    <article class="post-expand post" itemprop="articleBody"> 
+        <header class="article-info clearfix">
+  <h1 itemprop="name">
+    
+      <a href="/2019/03/31/pyspark-model-analysis/" title="pyspark模型结构解析" itemprop="url">pyspark模型结构解析</a>
+  </h1>
+  <p class="article-author">By
+       
+		<a href="/about" title="Pele Chen" target="_blank" itemprop="author">Pele Chen</a>
+		
+  <p class="article-time">
+    <time datetime="2019-03-31T02:16:00.000Z" itemprop="datePublished"> 发表于 Mar 31 2019</time>
+    
+  </p>
+</header>
+    <div class="article-content">
+        
+        <img src="/img/pyspark-model-analysis/pyspark-logo.png" class="img-topic">
+
+<p>最近在将自研算法集成到pyspark生态中，为了降低用户学习成本，计划将接口、最终生成模型都按照pyspark要求来实现，但是在互联网上并没有找到官方的开发指南，所以只能自己一步一步的琢磨，今天就先来看下pyspark最终保存的模型长什么样，后面再全面总结如何融入生态。</p>
+        
+        
+        <p class="article-more-link">
+          
+            <a href="/2019/03/31/pyspark-model-analysis/#more">Read More</a>
+          
+       </p>
+    </div>
+    <footer class="article-footer clearfix">
+<div class="article-catetags">
+
+<div class="article-categories">
+  <span></span>
+  <a class="article-category-link" href="/categories/technology/">技术</a>
+</div>
+
+
+  <div class="article-tags">
+  
+  <span></span> <a href="/tags/Python/">Python</a><a href="/tags/机器学习/">机器学习</a><a href="/tags/pyspark/">pyspark</a>
+  </div>
+
+</div>
+
+
+
+
+<div class="comments-count">
+	
+</div>
+
+</footer>
+
+
+    </article>
+
+
+
+
+
+
+
+  <nav id="page-nav" class="clearfix">
+    <a class="extend prev" rel="prev" href="/"><span></span>Prev</a><a class="page-number" href="/">1</a><span class="page-number current">2</span><a class="page-number" href="/page/3/">3</a><a class="page-number" href="/page/4/">4</a><a class="extend next" rel="next" href="/page/3/">Next<span></span></a>
+  </nav>
+
+</div>
+      <div class="openaside"><a class="navbutton" href="#" title="显示侧边栏"></a></div>
+
+<div id="asidepart">
+<div class="closeaside"><a class="closebutton" href="#" title="隐藏侧边栏"></a></div>
+<aside class="clearfix">
+
+  
+<div class="categorieslist">
+	<p class="asidetitle">分类</p>
+		<ul>
+		
+		  
+			<li><a href="/categories/tool/" title="工具">工具<sup>5</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/technology/" title="技术">技术<sup>9</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/diary/" title="日记">日记<sup>3</sup></a></li>
+		  
+		
+		</ul>
+</div>
+
+
+  
+<div class="tagslist">
+	<p class="asidetitle">标签</p>
+		<ul class="clearfix">
+		
+			
+				<li><a href="/tags/Python/" title="Python">Python<sup>5</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/机器学习/" title="机器学习">机器学习<sup>4</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Linux/" title="Linux">Linux<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/多线程/" title="多线程">多线程<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/性能/" title="性能">性能<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/C/" title="C++">C++<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/sklearn/" title="sklearn">sklearn<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/内存/" title="内存">内存<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/nodejs/" title="nodejs">nodejs<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/hexo/" title="hexo">hexo<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/GitHub/" title="GitHub">GitHub<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/git/" title="git">git<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Valgrind/" title="Valgrind">Valgrind<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/同理心/" title="同理心">同理心<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/成长型思维/" title="成长型思维">成长型思维<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/etcd/" title="etcd">etcd<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Source-Insight/" title="Source Insight">Source Insight<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Web/" title="Web">Web<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Java/" title="Java">Java<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/同步/" title="同步">同步<sup>1</sup></a></li>
+			
+		
+		</ul>
+</div>
+
+
+  <div class="linkslist">
+  <p class="asidetitle">常用链接</p>
+    <ul>
+        
+          <li>
+            
+            	<a href="http://blog.csdn.net/chenpy228" target="_blank" title=" 我的CSDN博客">我的CSDN博客</a>
+            
+          </li>
+        
+          <li>
+            
+            	<a href="https://coolshell.cn/" target="_blank" title=" 酷壳">酷壳</a>
+            
+          </li>
+        
+          <li>
+            
+            	<a href="http://www.yinwang.org/" target="_blank" title=" 当然我们在扯淡">当然我们在扯淡</a>
+            
+          </li>
+        
+          <li>
+            
+            	<a href="http://www.ruanyifeng.com/blog/" target="_blank" title=" 阮一峰的网络日志">阮一峰的网络日志</a>
+            
+          </li>
+        
+          <li>
+            
+            	<a href="http://calvin1978.blogcn.com/" target="_blank" title=" 江南白衣">江南白衣</a>
+            
+          </li>
+        
+          <li>
+            
+            	<a href="https://blog.codingnow.com/" target="_blank" title=" 云风的BLOG">云风的BLOG</a>
+            
+          </li>
+        
+    </ul>
+</div>
+
+  
+  <div class="tagcloudlist">
+    <p class="asidetitle">标签云</p>
+    <div class="tagcloudlist clearfix">
+       <a href="/tags/C/" style="font-size: 12.5px;">C++</a> <a href="/tags/Edge/" style="font-size: 10px;">Edge</a> <a href="/tags/GitHub/" style="font-size: 10px;">GitHub</a> <a href="/tags/Java/" style="font-size: 10px;">Java</a> <a href="/tags/Linux/" style="font-size: 15px;">Linux</a> <a href="/tags/Python/" style="font-size: 20px;">Python</a> <a href="/tags/Source-Insight/" style="font-size: 10px;">Source Insight</a> <a href="/tags/Valgrind/" style="font-size: 10px;">Valgrind</a> <a href="/tags/Web/" style="font-size: 10px;">Web</a> <a href="/tags/etcd/" style="font-size: 10px;">etcd</a> <a href="/tags/git/" style="font-size: 10px;">git</a> <a href="/tags/hexo/" style="font-size: 10px;">hexo</a> <a href="/tags/nodejs/" style="font-size: 10px;">nodejs</a> <a href="/tags/pyspark/" style="font-size: 10px;">pyspark</a> <a href="/tags/sklearn/" style="font-size: 10px;">sklearn</a> <a href="/tags/内存/" style="font-size: 10px;">内存</a> <a href="/tags/区块链/" style="font-size: 10px;">区块链</a> <a href="/tags/同步/" style="font-size: 10px;">同步</a> <a href="/tags/同理心/" style="font-size: 10px;">同理心</a> <a href="/tags/多线程/" style="font-size: 15px;">多线程</a> <a href="/tags/学习/" style="font-size: 10px;">学习</a> <a href="/tags/性能/" style="font-size: 12.5px;">性能</a> <a href="/tags/成长型思维/" style="font-size: 10px;">成长型思维</a> <a href="/tags/机器学习/" style="font-size: 17.5px;">机器学习</a> <a href="/tags/聚类/" style="font-size: 10px;">聚类</a>
+    </div>
+  </div>
+
+
+  <div class="rsspart">
+	<a href="/atom.xml" target="_blank" title="rss">RSS 订阅</a>
+</div>
+
+</aside>
+</div>
+    </div>
+    <footer><div id="footer" >
+	
+	<div class="line">
+		<span></span>
+		<div class="author"></div>
+	</div>
+	
+	
+	<section class="info">
+		<p> Welcome to my blog, I&#39;m Pele Chen! <br/>
+			I hope you like the writings here, having fan!</p>
+	</section>
+	 
+	<div class="social-font" class="clearfix">
+		
+		<a href="http://weibo.com/1374354697" target="_blank" class="icon-weibo" title="微博"></a>
+		
+		
+		<a href="https://github.com/chenpy228" target="_blank" class="icon-github" title="github"></a>
+		
+		
+		
+		<a href="https://twitter.com/chenpy228" target="_blank" class="icon-twitter" title="twitter"></a>
+		
+		
+		
+		
+		
+		
+		
+		<a href="mailto:chpei@foxmail.com" target="_blank" class="icon-email" title="Email Me"></a>
+		
+	</div>
+			
+		
+				<div class="cc-license">
+          <a href="http://creativecommons.org/licenses/by-nc-sa/4.0" class="cc-opacity" target="_blank">
+            <img src="/img/cc-by-nc-sa.svg" alt="Creative Commons" />
+          </a>
+        </div>
+    
+
+		<p class="copyright">
+		Powered by <a href="http://hexo.io" target="_blank" title="hexo">hexo</a> | Theme by <a href="https://github.com/wuchong/jacman" target="_blank" title="Jacman">Jacman</a> | Hosted by <a href="https://coding.net" style="font-weight: bold">Coding Pages</a> © 2013-2021
+		
+		<a href="/about" target="_blank" title="Pele Chen">Pele Chen</a>
+		
+
+        <!-- Analytics Begin -->
+        
+
+
+
+
+<script type="text/javascript">
+var cnzz_protocol = (("https:" == document.location.protocol) ? " https://" : " http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_1253436290'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s6.cnzz.com/z_stat.php%3Fid%3D1253436290%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));
+</script>
+
+        <!-- Analytics End -->
+		</p>
+</div>
+</footer>
+    <script src="/js/jquery-2.0.3.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+<script src="/js/jquery.qrcode-0.12.0.min.js"></script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.navbar').click(function(){
+    $('header nav').toggleClass('shownav');
+  });
+  var myWidth = 0;
+  function getSize(){
+    if( typeof( window.innerWidth ) == 'number' ) {
+      myWidth = window.innerWidth;
+    } else if( document.documentElement && document.documentElement.clientWidth) {
+      myWidth = document.documentElement.clientWidth;
+    };
+  };
+  var m = $('#main'),
+      a = $('#asidepart'),
+      c = $('.closeaside'),
+      o = $('.openaside');
+  c.click(function(){
+    a.addClass('fadeOut').css('display', 'none');
+    o.css('display', 'block').addClass('fadeIn');
+    m.addClass('moveMain');
+  });
+  o.click(function(){
+    o.css('display', 'none').removeClass('beforeFadeIn');
+    a.css('display', 'block').removeClass('fadeOut').addClass('fadeIn');      
+    m.removeClass('moveMain');
+  });
+  $(window).scroll(function(){
+    o.css("top",Math.max(80,260-$(this).scrollTop()));
+  });
+  
+  $(window).resize(function(){
+    getSize(); 
+    if (myWidth >= 1024) {
+      $('header nav').removeClass('shownav');
+    }else{
+      m.removeClass('moveMain');
+      a.css('display', 'block').removeClass('fadeOut');
+      o.css('display', 'none');
+        
+    }
+  });
+});
+</script>
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.article-content').each(function(i){
+    $(this).find('img').each(function(){
+      if ($(this).parent().hasClass('fancybox')) return;
+      var alt = this.alt;
+      if (alt) $(this).after('<span class="caption">' + alt + '</span>');
+      $(this).wrap('<a href="' + this.src + '" title="' + alt + '" class="fancybox"></a>');
+    });
+    $(this).find('.fancybox').each(function(){
+      $(this).attr('rel', 'article' + i);
+    });
+  });
+  if($.fancybox){
+    $('.fancybox').fancybox();
+  }
+}); 
+</script>
+
+
+
+<!-- Totop Begin -->
+
+	<div id="totop">
+	<a title="返回顶部"><img src="/img/scrollup.png"/></a>
+	</div>
+	<script src="/js/totop.js"></script>
+
+<!-- Totop End -->
+
+<!-- MathJax Begin -->
+<!-- mathjax config similar to math.stackexchange -->
+
+
+<!-- MathJax End -->
+
+<!-- Tiny_search Begin -->
+
+<!-- Tiny_search End -->
+
+  </body>
+ </html>

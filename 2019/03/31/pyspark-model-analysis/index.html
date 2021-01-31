@@ -1,0 +1,614 @@
+
+ <!DOCTYPE HTML>
+<html lang="zh-CN">
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="UTF-8">
+  
+    <title>pyspark模型结构解析 | 超级码力</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1,user-scalable=no">
+    
+    <meta name="author" content="Pele Chen">
+    
+
+    
+    <meta name="description" content="最近在将自研算法集成到pyspark生态中，为了降低用户学习成本，计划将接口、最终生成模型都按照pyspark要求来实现，但是在互联网上并没有找到官方的开发指南，所以只能自己一步一步的琢磨，今天就先来看下pyspark最终保存的模型长什么样，后面再全面总结如何融入生态。">
+<meta name="keywords" content="Python,机器学习,pyspark">
+<meta property="og:type" content="article">
+<meta property="og:title" content="pyspark模型结构解析">
+<meta property="og:url" content="http://supercoder.xyz/2019/03/31/pyspark-model-analysis/index.html">
+<meta property="og:site_name" content="超级码力">
+<meta property="og:description" content="最近在将自研算法集成到pyspark生态中，为了降低用户学习成本，计划将接口、最终生成模型都按照pyspark要求来实现，但是在互联网上并没有找到官方的开发指南，所以只能自己一步一步的琢磨，今天就先来看下pyspark最终保存的模型长什么样，后面再全面总结如何融入生态。">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="http://supercoder.xyz/img/pyspark-model-analysis/pyspark-logo.png">
+<meta property="og:updated_time" content="2021-01-31T12:19:32.081Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="pyspark模型结构解析">
+<meta name="twitter:description" content="最近在将自研算法集成到pyspark生态中，为了降低用户学习成本，计划将接口、最终生成模型都按照pyspark要求来实现，但是在互联网上并没有找到官方的开发指南，所以只能自己一步一步的琢磨，今天就先来看下pyspark最终保存的模型长什么样，后面再全面总结如何融入生态。">
+<meta name="twitter:image" content="http://supercoder.xyz/img/pyspark-model-analysis/pyspark-logo.png">
+<meta name="twitter:creator" content="@chenpy228">
+
+    
+    <link rel="alternative" href="/atom.xml" title="超级码力" type="application/atom+xml">
+    
+    
+    <link rel="icon" href="/img/favicon.ico">
+    
+    
+    <link rel="apple-touch-icon" href="/img/jacman.jpg">
+    <link rel="apple-touch-icon-precomposed" href="/img/jacman.jpg">
+    
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+</html>
+  <body>
+    <header>
+      
+<div>
+		
+			<div id="imglogo">
+				<a href="/"><img src="/img/logo.svg" alt="超级码力" title="超级码力"/></a>
+			</div>
+			
+			<div id="textlogo">
+				<h1 class="site-name"><a href="/" title="超级码力">超级码力</a></h1>
+				<h2 class="blog-motto">Stay hungry, stay foolish!</h2>
+			</div>
+			<div class="navbar"><a class="navbutton navmobile" href="#" title="菜单">
+			</a></div>
+			<nav class="animated">
+				<ul>
+					<ul>
+					 
+						<li><a href="/">首页</a></li>
+					
+						<li><a href="/archives">归档</a></li>
+					
+						<li><a href="/command">命令</a></li>
+					
+						<li><a href="/about">关于</a></li>
+					
+					<li>
+ 					
+					<form class="search" action="/search/index.html" method="get" accept-charset="utf-8">
+						<label>Search</label>
+						<input type="search" id="search" autocomplete="off" name="q" maxlength="20" placeholder="搜索" />
+					</form>
+					
+					</li>
+				</ul>
+			</nav>			
+</div>
+    </header>
+    <div id="container">
+      <div id="main" class="post" itemscope itemprop="blogPost">
+  
+	<article itemprop="articleBody"> 
+		<header class="article-info clearfix">
+  <h1 itemprop="name">
+    
+      <a href="/2019/03/31/pyspark-model-analysis/" title="pyspark模型结构解析" itemprop="url">pyspark模型结构解析</a>
+  </h1>
+  <p class="article-author">By
+       
+		<a href="/about" title="Pele Chen" target="_blank" itemprop="author">Pele Chen</a>
+		
+  <p class="article-time">
+    <time datetime="2019-03-31T02:16:00.000Z" itemprop="datePublished"> 发表于 Mar 31 2019</time>
+    
+  </p>
+</header>
+	<div class="article-content">
+		
+		<div id="toc" class="toc-article">
+			<strong class="toc-title">文章目录</strong>
+		
+			<ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#生成模型"><span class="toc-number">1.</span> <span class="toc-text">生成模型</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#解析模型"><span class="toc-number">2.</span> <span class="toc-text">解析模型</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#参考"><span class="toc-number">3.</span> <span class="toc-text">参考</span></a></li></ol>
+		
+		</div>
+		
+		<img src="/img/pyspark-model-analysis/pyspark-logo.png" class="img-topic">
+
+<p>最近在将自研算法集成到pyspark生态中，为了降低用户学习成本，计划将接口、最终生成模型都按照pyspark要求来实现，但是在互联网上并没有找到官方的开发指南，所以只能自己一步一步的琢磨，今天就先来看下pyspark最终保存的模型长什么样，后面再全面总结如何融入生态。</p>
+<a id="more"></a>
+
+<h2 id="生成模型"><a href="#生成模型" class="headerlink" title="生成模型"></a>生成模型</h2><p>首先训练一个模型，本文以逻辑回归为例，代码如下</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">data = [LabeledPoint(<span class="number">0.0</span>, [<span class="number">0.0</span>, <span class="number">1.0</span>]), LabeledPoint(<span class="number">1.0</span>, [<span class="number">1.0</span>, <span class="number">0.0</span>]),]</span><br><span class="line">lrm = LogisticRegressionWithSGD.train(sc.parallelize(data), iterations=<span class="number">10</span>)</span><br><span class="line">lrm.save(sc, <span class="string">'file:///lrm_model'</span>)</span><br></pre></td></tr></table></figure>
+
+<p>生成的结果如下，可以看出模型包含2个文件夹，一个是data，一个是metadata，很明显这两个都是parquet格式的文件，data是DF格式的，metadata是文本格式的。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">$ tree lrm_model/</span><br><span class="line">lrm_model/</span><br><span class="line">├── data</span><br><span class="line">│   ├── _SUCCESS</span><br><span class="line">│   └── part-00000-ccd54944-8aed-4ed5-accd-5d854e8f89b9.snappy.parquet</span><br><span class="line">└── metadata</span><br><span class="line">    ├── _SUCCESS</span><br><span class="line">    └── part-00000</span><br><span class="line"></span><br><span class="line">2 directories, 4 files</span><br></pre></td></tr></table></figure>
+
+<h2 id="解析模型"><a href="#解析模型" class="headerlink" title="解析模型"></a>解析模型</h2><p>尝试用parquet格式读取data下的内容，很显然是DF结构的数据，3个字段，一条记录，主要是逻辑回归的参数。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sqlContext.read.parquet(<span class="string">'file:///lrm_model/data'</span>).show()</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">+--------------------+---------+---------+</span><br><span class="line">|             weights|intercept|threshold|</span><br><span class="line">+--------------------+---------+---------+</span><br><span class="line">|[0.94797638679085...|      0.0|      0.5|</span><br><span class="line">+--------------------+---------+---------+</span><br></pre></td></tr></table></figure>
+
+<p>再解析metadata下的数据，如果再用parquet去读就会报错，用text()方法可以看到是一段文字，但并没有显示完全。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sqlContext.read.text(<span class="string">'file:///lrm_model/metadata'</span>).show()</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">+--------------------+</span><br><span class="line">|               value|</span><br><span class="line">+--------------------+</span><br><span class="line">|&#123;&quot;class&quot;:&quot;org.apa...|</span><br><span class="line">+--------------------+</span><br></pre></td></tr></table></figure>
+
+<p>由于是文本，所以直接用cat输出文件内容，可以看出是这个模型的元数据文件，包括类名、版本号及输入数据的特征。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ cat lrm_model/metadata/part-00000</span><br><span class="line">&#123;&quot;class&quot;:&quot;org.apache.spark.mllib.classification.LogisticRegressionModel&quot;,&quot;version&quot;:&quot;1.0&quot;,&quot;numFeatures&quot;:2,&quot;numClasses&quot;:2&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2>  
+	</div>
+		<footer class="article-footer clearfix">
+<div class="article-catetags">
+
+<div class="article-categories">
+  <span></span>
+  <a class="article-category-link" href="/categories/technology/">技术</a>
+</div>
+
+
+  <div class="article-tags">
+  
+  <span></span> <a href="/tags/Python/">Python</a><a href="/tags/机器学习/">机器学习</a><a href="/tags/pyspark/">pyspark</a>
+  </div>
+
+</div>
+
+
+
+	<div class="article-share" id="share">
+	
+	  <div data-url="http://supercoder.xyz/2019/03/31/pyspark-model-analysis/" data-title="pyspark模型结构解析 | 超级码力" data-tsina="1374354697" class="share clearfix">
+	  </div>
+	
+	</div>
+
+
+</footer>
+
+   	       
+	</article>
+	
+<nav class="article-nav clearfix">
+ 
+ <div class="prev" >
+ <a href="/2019/04/13/about-clustering/" title="聚类算法综述">
+  <strong>上一篇：</strong><br/>
+  <span>
+  聚类算法综述</span>
+</a>
+</div>
+
+
+<div class="next">
+<a href="/2017/09/26/get-caller-info-in-python/"  title="Python中获取调用者信息的方法">
+ <strong>下一篇：</strong><br/> 
+ <span>Python中获取调用者信息的方法
+</span>
+</a>
+</div>
+
+</nav>
+
+	
+
+
+</div>  
+      <div class="openaside"><a class="navbutton" href="#" title="显示侧边栏"></a></div>
+
+  <div id="toc" class="toc-aside">
+  <strong class="toc-title">文章目录</strong>
+ 
+ <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#生成模型"><span class="toc-number">1.</span> <span class="toc-text">生成模型</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#解析模型"><span class="toc-number">2.</span> <span class="toc-text">解析模型</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#参考"><span class="toc-number">3.</span> <span class="toc-text">参考</span></a></li></ol>
+ 
+  </div>
+
+<div id="asidepart">
+<div class="closeaside"><a class="closebutton" href="#" title="隐藏侧边栏"></a></div>
+<aside class="clearfix">
+
+  
+<div class="categorieslist">
+	<p class="asidetitle">分类</p>
+		<ul>
+		
+		  
+			<li><a href="/categories/tool/" title="工具">工具<sup>5</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/technology/" title="技术">技术<sup>9</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/diary/" title="日记">日记<sup>3</sup></a></li>
+		  
+		
+		</ul>
+</div>
+
+
+  
+<div class="tagslist">
+	<p class="asidetitle">标签</p>
+		<ul class="clearfix">
+		
+			
+				<li><a href="/tags/Python/" title="Python">Python<sup>5</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/机器学习/" title="机器学习">机器学习<sup>4</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Linux/" title="Linux">Linux<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/多线程/" title="多线程">多线程<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/性能/" title="性能">性能<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/C/" title="C++">C++<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/sklearn/" title="sklearn">sklearn<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/内存/" title="内存">内存<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/nodejs/" title="nodejs">nodejs<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/hexo/" title="hexo">hexo<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/GitHub/" title="GitHub">GitHub<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/git/" title="git">git<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Valgrind/" title="Valgrind">Valgrind<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/同理心/" title="同理心">同理心<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/成长型思维/" title="成长型思维">成长型思维<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/etcd/" title="etcd">etcd<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Source-Insight/" title="Source Insight">Source Insight<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Web/" title="Web">Web<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Java/" title="Java">Java<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/同步/" title="同步">同步<sup>1</sup></a></li>
+			
+		
+		</ul>
+</div>
+
+
+  <div class="linkslist">
+  <p class="asidetitle">常用链接</p>
+    <ul>
+        
+          <li>
+            
+            	<a href="http://blog.csdn.net/chenpy228" target="_blank" title=" 我的CSDN博客">我的CSDN博客</a>
+            
+          </li>
+        
+          <li>
+            
+            	<a href="https://coolshell.cn/" target="_blank" title=" 酷壳">酷壳</a>
+            
+          </li>
+        
+          <li>
+            
+            	<a href="http://www.yinwang.org/" target="_blank" title=" 当然我们在扯淡">当然我们在扯淡</a>
+            
+          </li>
+        
+          <li>
+            
+            	<a href="http://www.ruanyifeng.com/blog/" target="_blank" title=" 阮一峰的网络日志">阮一峰的网络日志</a>
+            
+          </li>
+        
+          <li>
+            
+            	<a href="http://calvin1978.blogcn.com/" target="_blank" title=" 江南白衣">江南白衣</a>
+            
+          </li>
+        
+          <li>
+            
+            	<a href="https://blog.codingnow.com/" target="_blank" title=" 云风的BLOG">云风的BLOG</a>
+            
+          </li>
+        
+    </ul>
+</div>
+
+  
+  <div class="tagcloudlist">
+    <p class="asidetitle">标签云</p>
+    <div class="tagcloudlist clearfix">
+       <a href="/tags/C/" style="font-size: 12.5px;">C++</a> <a href="/tags/Edge/" style="font-size: 10px;">Edge</a> <a href="/tags/GitHub/" style="font-size: 10px;">GitHub</a> <a href="/tags/Java/" style="font-size: 10px;">Java</a> <a href="/tags/Linux/" style="font-size: 15px;">Linux</a> <a href="/tags/Python/" style="font-size: 20px;">Python</a> <a href="/tags/Source-Insight/" style="font-size: 10px;">Source Insight</a> <a href="/tags/Valgrind/" style="font-size: 10px;">Valgrind</a> <a href="/tags/Web/" style="font-size: 10px;">Web</a> <a href="/tags/etcd/" style="font-size: 10px;">etcd</a> <a href="/tags/git/" style="font-size: 10px;">git</a> <a href="/tags/hexo/" style="font-size: 10px;">hexo</a> <a href="/tags/nodejs/" style="font-size: 10px;">nodejs</a> <a href="/tags/pyspark/" style="font-size: 10px;">pyspark</a> <a href="/tags/sklearn/" style="font-size: 10px;">sklearn</a> <a href="/tags/内存/" style="font-size: 10px;">内存</a> <a href="/tags/区块链/" style="font-size: 10px;">区块链</a> <a href="/tags/同步/" style="font-size: 10px;">同步</a> <a href="/tags/同理心/" style="font-size: 10px;">同理心</a> <a href="/tags/多线程/" style="font-size: 15px;">多线程</a> <a href="/tags/学习/" style="font-size: 10px;">学习</a> <a href="/tags/性能/" style="font-size: 12.5px;">性能</a> <a href="/tags/成长型思维/" style="font-size: 10px;">成长型思维</a> <a href="/tags/机器学习/" style="font-size: 17.5px;">机器学习</a> <a href="/tags/聚类/" style="font-size: 10px;">聚类</a>
+    </div>
+  </div>
+
+
+  <div class="rsspart">
+	<a href="/atom.xml" target="_blank" title="rss">RSS 订阅</a>
+</div>
+
+</aside>
+</div>
+    </div>
+    <footer><div id="footer" >
+	
+	<div class="line">
+		<span></span>
+		<div class="author"></div>
+	</div>
+	
+	
+	<section class="info">
+		<p> Welcome to my blog, I&#39;m Pele Chen! <br/>
+			I hope you like the writings here, having fan!</p>
+	</section>
+	 
+	<div class="social-font" class="clearfix">
+		
+		<a href="http://weibo.com/1374354697" target="_blank" class="icon-weibo" title="微博"></a>
+		
+		
+		<a href="https://github.com/chenpy228" target="_blank" class="icon-github" title="github"></a>
+		
+		
+		
+		<a href="https://twitter.com/chenpy228" target="_blank" class="icon-twitter" title="twitter"></a>
+		
+		
+		
+		
+		
+		
+		
+		<a href="mailto:chpei@foxmail.com" target="_blank" class="icon-email" title="Email Me"></a>
+		
+	</div>
+			
+		
+				<div class="cc-license">
+          <a href="http://creativecommons.org/licenses/by-nc-sa/4.0" class="cc-opacity" target="_blank">
+            <img src="/img/cc-by-nc-sa.svg" alt="Creative Commons" />
+          </a>
+        </div>
+    
+
+		<p class="copyright">
+		Powered by <a href="http://hexo.io" target="_blank" title="hexo">hexo</a> | Theme by <a href="https://github.com/wuchong/jacman" target="_blank" title="Jacman">Jacman</a> | Hosted by <a href="https://coding.net" style="font-weight: bold">Coding Pages</a> © 2013-2021
+		
+		<a href="/about" target="_blank" title="Pele Chen">Pele Chen</a>
+		
+
+        <!-- Analytics Begin -->
+        
+
+
+
+
+<script type="text/javascript">
+var cnzz_protocol = (("https:" == document.location.protocol) ? " https://" : " http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_1253436290'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s6.cnzz.com/z_stat.php%3Fid%3D1253436290%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));
+</script>
+
+        <!-- Analytics End -->
+		</p>
+</div>
+</footer>
+    <script src="/js/jquery-2.0.3.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+<script src="/js/jquery.qrcode-0.12.0.min.js"></script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.navbar').click(function(){
+    $('header nav').toggleClass('shownav');
+  });
+  var myWidth = 0;
+  function getSize(){
+    if( typeof( window.innerWidth ) == 'number' ) {
+      myWidth = window.innerWidth;
+    } else if( document.documentElement && document.documentElement.clientWidth) {
+      myWidth = document.documentElement.clientWidth;
+    };
+  };
+  var m = $('#main'),
+      a = $('#asidepart'),
+      c = $('.closeaside'),
+      o = $('.openaside');
+  c.click(function(){
+    a.addClass('fadeOut').css('display', 'none');
+    o.css('display', 'block').addClass('fadeIn');
+    m.addClass('moveMain');
+  });
+  o.click(function(){
+    o.css('display', 'none').removeClass('beforeFadeIn');
+    a.css('display', 'block').removeClass('fadeOut').addClass('fadeIn');      
+    m.removeClass('moveMain');
+  });
+  $(window).scroll(function(){
+    o.css("top",Math.max(80,260-$(this).scrollTop()));
+  });
+  
+  $(window).resize(function(){
+    getSize(); 
+    if (myWidth >= 1024) {
+      $('header nav').removeClass('shownav');
+    }else{
+      m.removeClass('moveMain');
+      a.css('display', 'block').removeClass('fadeOut');
+      o.css('display', 'none');
+      
+      $('#toc.toc-aside').css('display', 'none');
+        
+    }
+  });
+});
+</script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var ai = $('.article-content>iframe'),
+      ae = $('.article-content>embed'),
+      t  = $('#toc'),
+      ta = $('#toc.toc-aside'),
+      o  = $('.openaside'),
+      c  = $('.closeaside');
+  if(ai.length>0){
+    ai.wrap('<div class="video-container" />');
+  };
+  if(ae.length>0){
+   ae.wrap('<div class="video-container" />');
+  };
+  c.click(function(){
+    ta.css('display', 'block').addClass('fadeIn');
+  });
+  o.click(function(){
+    ta.css('display', 'none');
+  });
+  $(window).scroll(function(){
+    ta.css("top",Math.max(140,320-$(this).scrollTop()));
+  });
+});
+</script>
+
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var $this = $('.share'),
+      url = $this.attr('data-url'),
+      encodedUrl = encodeURIComponent(url),
+      title = $this.attr('data-title'),
+      tsina = $this.attr('data-tsina'),
+      description = $this.attr('description');
+  var html = [
+  '<div class="hoverqrcode clearfix"></div>',
+  '<a class="overlay" id="qrcode"></a>',
+  '<a href="https://www.facebook.com/sharer.php?u=' + encodedUrl + '" class="article-share-facebook" target="_blank" title="Facebook"></a>',
+  '<a href="https://twitter.com/intent/tweet?url=' + encodedUrl + '" class="article-share-twitter" target="_blank" title="Twitter"></a>',
+  '<a href="#qrcode" class="article-share-qrcode" title="微信"></a>',
+  '<a href="http://widget.renren.com/dialog/share?resourceUrl=' + encodedUrl + '&srcUrl=' + encodedUrl + '&title=' + title +'" class="article-share-renren" target="_blank" title="人人"></a>',
+  '<a href="http://service.weibo.com/share/share.php?title='+title+'&url='+encodedUrl +'&ralateUid='+ tsina +'&searchPic=true&style=number' +'" class="article-share-weibo" target="_blank" title="微博"></a>',
+  '<span title="Share to"></span>'
+  ].join('');
+  $this.append(html);
+
+  $('.hoverqrcode').hide();
+
+  var myWidth = 0;
+  function updatehoverqrcode(){
+    if( typeof( window.innerWidth ) == 'number' ) {
+      myWidth = window.innerWidth;
+    } else if( document.documentElement && document.documentElement.clientWidth) {
+      myWidth = document.documentElement.clientWidth;
+    };
+    var qrsize = myWidth > 1024 ? 200:100;
+    var options = {render: 'image', size: qrsize, fill: '#2ca6cb', text: url, radius: 0.5, quiet: 1};
+    var p = $('.article-share-qrcode').position();
+    $('.hoverqrcode').empty().css('width', qrsize).css('height', qrsize)
+                          .css('left', p.left-qrsize/2+20).css('top', p.top-qrsize-10)
+                          .qrcode(options);
+  };
+  $(window).resize(function(){
+    $('.hoverqrcode').hide();
+  });
+  $('.article-share-qrcode').click(function(){
+    updatehoverqrcode();
+    $('.hoverqrcode').toggle();
+  });
+  $('.article-share-qrcode').hover(function(){}, function(){
+      $('.hoverqrcode').hide();
+  });
+});   
+</script>
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.article-content').each(function(i){
+    $(this).find('img').each(function(){
+      if ($(this).parent().hasClass('fancybox')) return;
+      var alt = this.alt;
+      if (alt) $(this).after('<span class="caption">' + alt + '</span>');
+      $(this).wrap('<a href="' + this.src + '" title="' + alt + '" class="fancybox"></a>');
+    });
+    $(this).find('.fancybox').each(function(){
+      $(this).attr('rel', 'article' + i);
+    });
+  });
+  if($.fancybox){
+    $('.fancybox').fancybox();
+  }
+}); 
+</script>
+
+
+
+<!-- Totop Begin -->
+
+	<div id="totop">
+	<a title="返回顶部"><img src="/img/scrollup.png"/></a>
+	</div>
+	<script src="/js/totop.js"></script>
+
+<!-- Totop End -->
+
+<!-- MathJax Begin -->
+<!-- mathjax config similar to math.stackexchange -->
+
+
+<!-- MathJax End -->
+
+<!-- Tiny_search Begin -->
+
+<!-- Tiny_search End -->
+
+  </body>
+</html>
