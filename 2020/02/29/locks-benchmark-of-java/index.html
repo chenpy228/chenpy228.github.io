@@ -1,0 +1,634 @@
+
+ <!DOCTYPE HTML>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  
+    <title>Java中各种同步机制的性能测试 | 超级码力</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1,user-scalable=no">
+    
+    <meta name="author" content="Pele Chen">
+    
+
+    
+    <meta name="description" content="Java提供了多种同步机制，比如AtomicLong、LongAdder、ReentrantLock等，但是他们的性能到底如何？网上也有一些性能测试文章，但是要么同步机制不全，要么场景不全，因此笔者设计了一个性能测试框架，支持多场景、多种同步机制的性能测试，代码请参见locksbenchmark，后续有时间了再通过JMH进行对比测试。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Java中各种同步机制的性能测试">
+<meta property="og:url" content="http://supercoder.xyz/2020/02/29/locks-benchmark-of-java/index.html">
+<meta property="og:site_name" content="超级码力">
+<meta property="og:description" content="Java提供了多种同步机制，比如AtomicLong、LongAdder、ReentrantLock等，但是他们的性能到底如何？网上也有一些性能测试文章，但是要么同步机制不全，要么场景不全，因此笔者设计了一个性能测试框架，支持多场景、多种同步机制的性能测试，代码请参见locksbenchmark，后续有时间了再通过JMH进行对比测试。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://supercoder.xyz/img/locks-benchmark-of-java/results_picture.png">
+<meta property="og:image" content="http://supercoder.xyz/img/locks-benchmark-of-java/results_data.png">
+<meta property="og:image" content="http://supercoder.xyz/img/locks-benchmark-of-java/results_picture.png">
+<meta property="og:image" content="http://supercoder.xyz/img/locks-benchmark-of-java/results_without_fair_rwlock_picture.png">
+<meta property="article:published_time" content="2020-02-29T10:33:00.000Z">
+<meta property="article:modified_time" content="2024-04-17T08:28:41.918Z">
+<meta property="article:author" content="Pele Chen">
+<meta property="article:tag" content="多线程">
+<meta property="article:tag" content="性能">
+<meta property="article:tag" content="Java">
+<meta property="article:tag" content="同步">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://supercoder.xyz/img/locks-benchmark-of-java/results_picture.png">
+<meta name="twitter:creator" content="@chenpy228">
+
+    
+    <link rel="alternative" href="/atom.xml" title="超级码力" type="application/atom+xml">
+    
+    
+    <link rel="icon" href="/img/favicon.ico">
+    
+    
+    <link rel="apple-touch-icon" href="/img/jacman.jpg">
+    <link rel="apple-touch-icon-precomposed" href="/img/jacman.jpg">
+    
+    
+<link rel="stylesheet" href="/css/style.css">
+<link rel="stylesheet" href="/%02.css">
+<link rel="stylesheet" href="/.css">
+
+<meta name="generator" content="Hexo 5.4.2"></head>
+
+  <body>
+    <header>
+      
+<div>
+		
+			<div id="imglogo">
+				<a href="/"><img src="/img/logo.svg" alt="超级码力" title="超级码力"/></a>
+			</div>
+			
+			<div id="textlogo">
+				<h1 class="site-name"><a href="/" title="超级码力">超级码力</a></h1>
+				<h2 class="blog-motto">Stay hungry, stay foolish!</h2>
+			</div>
+			<div class="navbar"><a class="navbutton navmobile" href="#" title="菜单">
+			</a></div>
+			<nav class="animated">
+				<ul>
+					<ul>
+					 
+						<li><a href="/">首页</a></li>
+					
+						<li><a href="/archives">归档</a></li>
+					
+						<li><a href="/command">命令</a></li>
+					
+						<li><a href="/about">关于</a></li>
+					
+					<li>
+ 					
+						<form class="search">
+							<label>Search</label>
+							<input type="search" id="local-search-input" name="q" autocomplete="off" maxlength="20" placeholder="搜索" />
+						</form>
+					
+					</li>
+				</ul>
+			</nav>			
+</div>
+<div id="local-search-result" class="local-search-result-cls"></div>
+    </header>
+    <div id="container">
+      <div id="main" class="post" itemscope itemprop="blogPost">
+  
+	<article itemprop="articleBody"> 
+		<header class="article-info clearfix">
+  <h1 itemprop="name">
+    
+      <a href="/2020/02/29/locks-benchmark-of-java/" title="Java中各种同步机制的性能测试" itemprop="url">Java中各种同步机制的性能测试</a>
+  </h1>
+  <p class="article-author">By
+       
+		<a href="/about" title="Pele Chen" target="_blank" itemprop="author">Pele Chen</a>
+		
+  <p class="article-time">
+    <time datetime="2020-02-29T10:33:00.000Z" itemprop="datePublished"> 发表于 Feb 29 2020</time>
+    
+  </p>
+</header>
+	<div class="article-content">
+		
+		<div id="toc" class="toc-article">
+			<strong class="toc-title">文章目录</strong>
+		
+			<ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%B5%8B%E8%AF%95%E5%8E%9F%E7%90%86"><span class="toc-number">1.</span> <span class="toc-text">测试原理</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BD%BF%E7%94%A8%E6%96%B9%E5%BC%8F"><span class="toc-number">2.</span> <span class="toc-text">使用方式</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%B5%8B%E8%AF%95%E7%BB%93%E6%9E%9C"><span class="toc-number">3.</span> <span class="toc-text">测试结果</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BB%93%E8%AE%BA"><span class="toc-number">4.</span> <span class="toc-text">结论</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%BB%BA%E8%AE%AE"><span class="toc-number">5.</span> <span class="toc-text">建议</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%82%E8%80%83"><span class="toc-number">6.</span> <span class="toc-text">参考</span></a></li></ol>
+		
+		</div>
+		
+		<img src="/img/locks-benchmark-of-java/results_picture.png" class="img-topic" />
+
+<p>Java提供了多种同步机制，比如AtomicLong、LongAdder、ReentrantLock等，但是他们的性能到底如何？网上也有一些性能测试文章，但是要么同步机制不全，要么场景不全，因此笔者设计了一个性能测试框架，支持多场景、多种同步机制的性能测试，代码请参见<a target="_blank" rel="noopener" href="https://github.com/chenpy228/locksbenchmark">locksbenchmark</a>，后续有时间了再通过JMH进行对比测试。</p>
+<span id="more"></span>
+
+<h2 id="测试原理"><a href="#测试原理" class="headerlink" title="测试原理"></a>测试原理</h2><p>既然是同步测试，当然要使用多线程才行，而且最好覆盖多种场景，总结起来本次测试有以下几个关键点：</p>
+<ul>
+<li>可以指定读、写线程数，来模拟读多写少、读少写多，读写等比等场景。</li>
+<li>通过<code>CyclicBarrier</code>保证，所有线程开始工作那一刻才启动计时。通过<code>CountDownLatch</code>保证，只要有一个线程达成目标，就结束计时，保证计时尽量准确。</li>
+<li>每种同步机制，经过多轮测试，结果去掉最小值、最大值然后取平均值，避免JVM未预热出现奇异值。</li>
+<li>同步代码块中的代码非常简单，就是累加long型数值到一个目标值。如果需要测试新的同步机制，只需要扩展<code>Counter</code>类即可，具体实现可以参照类<a target="_blank" rel="noopener" href="https://github.com/chenpy228/locksbenchmark/blob/c16a89903948e543340d7e956dc10d0b88245196/src/main/java/xyz/supercoder/locksbenchmark/Counter.java#L9">Raw</a>。</li>
+</ul>
+<h2 id="使用方式"><a href="#使用方式" class="headerlink" title="使用方式"></a>使用方式</h2><p>代码托管在github，使用maven工具构建，具体命令如下：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_">$ </span><span class="language-bash">git <span class="built_in">clone</span> git@github.com:chenpy228/locksbenchmark.git</span></span><br><span class="line"><span class="meta prompt_">$ </span><span class="language-bash"><span class="built_in">cd</span> locksbenchmark</span></span><br><span class="line"><span class="meta prompt_">$ </span><span class="language-bash">mvn clean package</span></span><br><span class="line"><span class="meta prompt_">$ </span><span class="language-bash">java -jar target/locksbenchmark-1.0.jar -h    <span class="comment"># add -h to show help info</span></span></span><br><span class="line"><span class="meta prompt_">$ </span><span class="language-bash">java -jar target/locksbenchmark-1.0.jar       <span class="comment"># begin to test by using default parameter</span></span></span><br></pre></td></tr></table></figure>
+
+<h2 id="测试结果"><a href="#测试结果" class="headerlink" title="测试结果"></a>测试结果</h2><p>测试环境是Ubuntu 14.04.5 LTS，内核版本是4.4.0-101-generic，CPU是2核，JVM信息如下：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_">$ </span><span class="language-bash">java -version</span></span><br><span class="line">java version &quot;1.8.0_151&quot;</span><br><span class="line">Java(TM) SE Runtime Environment (build 1.8.0_151-b12)</span><br><span class="line">Java HotSpot(TM) 64-Bit Server VM (build 25.151-b12, mixed mode)</span><br></pre></td></tr></table></figure>
+
+<p>最终的测试结果如下，为了方便对比，Raw为没有使用任何同步机制的测试结果：<br><img src="/img/locks-benchmark-of-java/results_data.png" alt="results"></p>
+<p>由于部分同步机制的运行时间相差太大，所以对坐标轴进行了对数化（log10）处理，绘制图表如下（越短越好）：<br><img src="/img/locks-benchmark-of-java/results_picture.png" alt="results"></p>
+<p>去掉公平锁和读写锁后绘图如下（越短越好）：<br><img src="/img/locks-benchmark-of-java/results_without_fair_rwlock_picture.png" alt="results without fair and rw lock"></p>
+<h2 id="结论"><a href="#结论" class="headerlink" title="结论"></a>结论</h2><ul>
+<li>公平锁<code>ReentrantLock(true)</code>，即上图中的FairReentrantLock，在所有场景下的表现都比较差，所以在实际应用中很少看到它的身影。如果必须要用，一定要经过谨慎测试。</li>
+<li>读写锁<code>ReentrantReadWriteLock</code>，即上图中的RWLock，在读多写少的场景下表现的比较差，这跟我们的直觉可能不符，所以在java8中又引入了升级版的读写锁StampedLock。当然在写多读少的情况下，表现比较好，基本跟<code>StampedLock</code>持平。</li>
+<li>在所有场景下，<code>AtomicLong</code>、<code>LongAdder</code>和非公平锁<code>ReentrantLock(false)</code>的表现相差不大，而且<code>AtomicLong</code>略有优势。按照文档的说法，只有竞争非常激烈的时候，<code>LongAdder</code>才更有优势，读写比20:20估计还不是竞争激烈的时候，针对这两个类补充测试了读写比为200:200场景，结果显示<code>LongAdder</code>更胜一筹。目前来看，用<code>AtomicLong</code>可以满足需求，而且个人认为<code>AtomicLong</code>的接口更丰富。</li>
+<li>再来看看<code>StampedLock</code>，在读多写少的场景下，它的乐观锁（即上图中的OptimisticStampedLock）确实更胜一筹，其他场景下悲观锁略好一些。</li>
+<li>最后看<code>synchronized</code>，整体跟<code>StampedLock</code>表现差不多。</li>
+<li>基本上，<code>AtomicLong</code>和<code>LongAdder</code>属于第一梯队，<code>synchronized</code>、<code>StampedLock</code>和非公平锁<code>ReentrantLock(false)</code>属于第二梯队，<code>ReentrantReadWriteLock</code>和公平锁<code>ReentrantLock(true)</code>属于第三梯队。</li>
+</ul>
+<h2 id="建议"><a href="#建议" class="headerlink" title="建议"></a>建议</h2><p>如果被保护的是基本数据类型，在大多数场景下，建议使用<code>Atomic*</code>系列锁，如果竞争非常激烈可以使用<code>LongAdder</code>。如果被保护的是复杂的数据结构，在读多写少的场景下，可以用<code>StampedLock</code>的乐观锁，在读少写多的场景下，可以用<code>StampedLock</code>的悲观锁，其他场景直接用<code>ReentrantLock</code>的非公平锁即可。</p>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://github.com/chenpy228/locksbenchmark">测试源码</a></li>
+</ul>
+  
+	</div>
+		<footer class="article-footer clearfix">
+<div class="article-catetags">
+
+<div class="article-categories">
+  <span></span>
+  <a class="article-category-link" href="/categories/technology/">技术</a>
+</div>
+
+
+  <div class="article-tags">
+  
+  <span></span> <a href="/tags/多线程/">多线程</a><a href="/tags/性能/">性能</a><a href="/tags/Java/">Java</a><a href="/tags/同步/">同步</a>
+  </div>
+
+</div>
+
+
+
+	<div class="article-share" id="share">
+	
+	  <div data-url="http://supercoder.xyz/2020/02/29/locks-benchmark-of-java/" data-title="Java中各种同步机制的性能测试 | 超级码力" data-tsina="1374354697" class="share clearfix">
+	  </div>
+	
+	</div>
+
+
+</footer>
+
+   	       
+	</article>
+	
+<nav class="article-nav clearfix">
+ 
+ <div class="prev" >
+ <a href="/2021/09/25/deploy-hbase-on-windows/" title="Windows下独立部署支持SNAPPY算法的HBase">
+  <strong>上一篇：</strong><br/>
+  <span>
+  Windows下独立部署支持SNAPPY算法的HBase</span>
+</a>
+</div>
+
+
+<div class="next">
+<a href="/2020/01/01/look-ahead-2020/"  title="每天学习一小时，轻松超过80%的人">
+ <strong>下一篇：</strong><br/> 
+ <span>每天学习一小时，轻松超过80%的人
+</span>
+</a>
+</div>
+
+</nav>
+
+	
+
+
+</div>  
+      <div class="openaside"><a class="navbutton" href="#" title="显示侧边栏"></a></div>
+
+  <div id="toc" class="toc-aside">
+  <strong class="toc-title">文章目录</strong>
+ 
+ <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%B5%8B%E8%AF%95%E5%8E%9F%E7%90%86"><span class="toc-number">1.</span> <span class="toc-text">测试原理</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BD%BF%E7%94%A8%E6%96%B9%E5%BC%8F"><span class="toc-number">2.</span> <span class="toc-text">使用方式</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%B5%8B%E8%AF%95%E7%BB%93%E6%9E%9C"><span class="toc-number">3.</span> <span class="toc-text">测试结果</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BB%93%E8%AE%BA"><span class="toc-number">4.</span> <span class="toc-text">结论</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%BB%BA%E8%AE%AE"><span class="toc-number">5.</span> <span class="toc-text">建议</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%82%E8%80%83"><span class="toc-number">6.</span> <span class="toc-text">参考</span></a></li></ol>
+ 
+  </div>
+
+<div id="asidepart">
+<div class="closeaside"><a class="closebutton" href="#" title="隐藏侧边栏"></a></div>
+<aside class="clearfix">
+
+  
+<div class="categorieslist">
+	<p class="asidetitle">分类</p>
+		<ul>
+		
+		  
+			<li><a href="/categories/书评/" title="书评">书评<sup>7</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/tool/" title="工具">工具<sup>5</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/technology/" title="技术">技术<sup>10</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/diary/" title="日记">日记<sup>2</sup></a></li>
+		  
+		
+		</ul>
+</div>
+
+
+  
+<div class="tagslist">
+	<p class="asidetitle">标签</p>
+		<ul class="clearfix">
+		
+			
+				<li><a href="/tags/Python/" title="Python">Python<sup>5</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/机器学习/" title="机器学习">机器学习<sup>4</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Linux/" title="Linux">Linux<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/多线程/" title="多线程">多线程<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/性能/" title="性能">性能<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/C/" title="C++">C++<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/历史/" title="历史">历史<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Valgrind/" title="Valgrind">Valgrind<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/内存/" title="内存">内存<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Web/" title="Web">Web<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/聚类/" title="聚类">聚类<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/sklearn/" title="sklearn">sklearn<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/nodejs/" title="nodejs">nodejs<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/hexo/" title="hexo">hexo<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/GitHub/" title="GitHub">GitHub<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/HBase/" title="HBase">HBase<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/SNAPPY/" title="SNAPPY">SNAPPY<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Windows/" title="Windows">Windows<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/git/" title="git">git<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/区块链/" title="区块链">区块链<sup>1</sup></a></li>
+			
+		
+		</ul>
+</div>
+
+
+  <div class="linkslist">
+  <p class="asidetitle">常用链接</p>
+    <ul>
+        
+          <li>
+            
+            	<a href="http://blog.csdn.net/chenpy228" target="_blank" title=" 我的CSDN博客">我的CSDN博客</a>
+            
+          </li>
+        
+          <li>
+            
+            	<a href="https://coolshell.cn/" target="_blank" title=" 酷壳">酷壳</a>
+            
+          </li>
+        
+          <li>
+            
+            	<a href="http://www.ruanyifeng.com/blog/" target="_blank" title=" 阮一峰的网络日志">阮一峰的网络日志</a>
+            
+          </li>
+        
+          <li>
+            
+            	<a href="http://calvin1978.blogcn.com/" target="_blank" title=" 江南白衣">江南白衣</a>
+            
+          </li>
+        
+          <li>
+            
+            	<a href="https://blog.codingnow.com/" target="_blank" title=" 云风的BLOG">云风的BLOG</a>
+            
+          </li>
+        
+    </ul>
+</div>
+
+  
+  <div class="tagcloudlist">
+    <p class="asidetitle">标签云</p>
+    <div class="tagcloudlist clearfix">
+       <a href="/tags/C/" style="font-size: 12.5px;">C++</a> <a href="/tags/Edge/" style="font-size: 10px;">Edge</a> <a href="/tags/GitHub/" style="font-size: 10px;">GitHub</a> <a href="/tags/HBase/" style="font-size: 10px;">HBase</a> <a href="/tags/Java/" style="font-size: 10px;">Java</a> <a href="/tags/Linux/" style="font-size: 15px;">Linux</a> <a href="/tags/Python/" style="font-size: 20px;">Python</a> <a href="/tags/SNAPPY/" style="font-size: 10px;">SNAPPY</a> <a href="/tags/Source-Insight/" style="font-size: 10px;">Source Insight</a> <a href="/tags/Valgrind/" style="font-size: 10px;">Valgrind</a> <a href="/tags/Web/" style="font-size: 10px;">Web</a> <a href="/tags/Windows/" style="font-size: 10px;">Windows</a> <a href="/tags/etcd/" style="font-size: 10px;">etcd</a> <a href="/tags/git/" style="font-size: 10px;">git</a> <a href="/tags/hexo/" style="font-size: 10px;">hexo</a> <a href="/tags/nodejs/" style="font-size: 10px;">nodejs</a> <a href="/tags/pyspark/" style="font-size: 10px;">pyspark</a> <a href="/tags/sklearn/" style="font-size: 10px;">sklearn</a> <a href="/tags/%E4%B9%BE%E9%9A%86/" style="font-size: 10px;">乾隆</a> <a href="/tags/%E4%BF%AE%E5%85%BB/" style="font-size: 10px;">修养</a> <a href="/tags/%E5%86%85%E5%AD%98/" style="font-size: 10px;">内存</a> <a href="/tags/%E5%8C%BA%E5%9D%97%E9%93%BE/" style="font-size: 10px;">区块链</a> <a href="/tags/%E5%8D%8E%E5%A4%8F%E6%96%87%E6%98%8E/" style="font-size: 10px;">华夏文明</a> <a href="/tags/%E5%8E%86%E5%8F%B2/" style="font-size: 12.5px;">历史</a> <a href="/tags/%E5%90%88%E4%BD%9C/" style="font-size: 10px;">合作</a> <a href="/tags/%E5%90%8C%E6%AD%A5/" style="font-size: 10px;">同步</a> <a href="/tags/%E5%90%8C%E7%90%86%E5%BF%83/" style="font-size: 10px;">同理心</a> <a href="/tags/%E5%95%86%E4%B8%9A/" style="font-size: 10px;">商业</a> <a href="/tags/%E5%A4%9A%E7%BA%BF%E7%A8%8B/" style="font-size: 15px;">多线程</a> <a href="/tags/%E5%AD%94%E5%AD%90/" style="font-size: 10px;">孔子</a> <a href="/tags/%E5%AD%A6%E4%B9%A0/" style="font-size: 10px;">学习</a> <a href="/tags/%E5%BF%83%E7%90%86/" style="font-size: 10px;">心理</a> <a href="/tags/%E6%80%A7%E8%83%BD/" style="font-size: 12.5px;">性能</a> <a href="/tags/%E6%88%90%E9%95%BF%E5%9E%8B%E6%80%9D%E7%BB%B4/" style="font-size: 10px;">成长型思维</a> <a href="/tags/%E6%8A%80%E6%9C%AF/" style="font-size: 10px;">技术</a> <a href="/tags/%E6%95%99%E8%82%B2/" style="font-size: 10px;">教育</a> <a href="/tags/%E6%96%87%E6%98%8E/" style="font-size: 10px;">文明</a> <a href="/tags/%E6%9C%AA%E6%9D%A5/" style="font-size: 10px;">未来</a> <a href="/tags/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0/" style="font-size: 17.5px;">机器学习</a> <a href="/tags/%E6%B0%91%E6%97%8F%E8%9E%8D%E5%90%88/" style="font-size: 10px;">民族融合</a> <a href="/tags/%E6%B8%85%E6%9C%9D/" style="font-size: 10px;">清朝</a> <a href="/tags/%E8%81%9A%E7%B1%BB/" style="font-size: 10px;">聚类</a> <a href="/tags/%E8%87%AA%E5%8D%91/" style="font-size: 10px;">自卑</a> <a href="/tags/%E8%8D%89%E5%8E%9F%E6%96%87%E6%98%8E/" style="font-size: 10px;">草原文明</a> <a href="/tags/%E8%AE%BA%E8%AF%AD/" style="font-size: 10px;">论语</a> <a href="/tags/%E9%81%93%E5%BE%B7/" style="font-size: 10px;">道德</a>
+    </div>
+  </div>
+
+
+  <div class="rsspart">
+	<a href="/atom.xml" target="_blank" title="rss">RSS 订阅</a>
+</div>
+
+</aside>
+</div>
+    </div>
+    <footer><div id="footer" >
+	
+	<div class="line">
+		<span></span>
+		<div class="author"></div>
+	</div>
+	
+	
+	<section class="info">
+		<p> Welcome to my blog, I&#39;m Pele Chen! <br/>
+			I hope you like the writings here, having fan!</p>
+	</section>
+	 
+	<div class="social-font" class="clearfix">
+		
+		<a href="http://weibo.com/1374354697" target="_blank" class="icon-weibo" title="微博"></a>
+		
+		
+		<a href="https://github.com/chenpy228" target="_blank" class="icon-github" title="github"></a>
+		
+		
+		
+		<a href="https://twitter.com/chenpy228" target="_blank" class="icon-twitter" title="twitter"></a>
+		
+		
+		
+		
+		
+		
+		
+		<a href="mailto:chpei@foxmail.com" target="_blank" class="icon-email" title="Email Me"></a>
+		
+	</div>
+			
+		
+				<div class="cc-license">
+          <a href="http://creativecommons.org/licenses/by-nc-sa/4.0" class="cc-opacity" target="_blank">
+            <img src="/img/cc-by-nc-sa.svg" alt="Creative Commons" />
+          </a>
+        </div>
+    
+
+		<p class="copyright">
+		Powered by <a href="http://hexo.io" target="_blank" title="hexo">hexo</a> | Theme by <a href="https://github.com/wuchong/jacman" target="_blank" title="Jacman">Jacman</a> | Hosted by <a target="_blank" rel="noopener" href="https://coding.net" style="font-weight: bold">Coding Pages</a> © 2013-2024
+		
+		<a href="/about" target="_blank" title="Pele Chen">Pele Chen</a>
+		
+
+        <!-- Analytics Begin -->
+        
+
+
+
+
+<script type="text/javascript">
+var cnzz_protocol = (("https:" == document.location.protocol) ? " https://" : " http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_1253436290'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s6.cnzz.com/z_stat.php%3Fid%3D1253436290%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));
+</script>
+
+        <!-- Analytics End -->
+		</p>
+</div>
+</footer>
+    <script src="/js/jquery-2.0.3.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+<script src="/js/jquery.qrcode-0.12.0.min.js"></script>
+<script src="/js/search.js"></script>
+<script src="/js/load.js"></script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.navbar').click(function(){
+    $('header nav').toggleClass('shownav');
+  });
+  var myWidth = 0;
+  function getSize(){
+    if( typeof( window.innerWidth ) == 'number' ) {
+      myWidth = window.innerWidth;
+    } else if( document.documentElement && document.documentElement.clientWidth) {
+      myWidth = document.documentElement.clientWidth;
+    };
+  };
+  var m = $('#main'),
+      a = $('#asidepart'),
+      c = $('.closeaside'),
+      o = $('.openaside');
+  c.click(function(){
+    a.addClass('fadeOut').css('display', 'none');
+    o.css('display', 'block').addClass('fadeIn');
+    m.addClass('moveMain');
+  });
+  o.click(function(){
+    o.css('display', 'none').removeClass('beforeFadeIn');
+    a.css('display', 'block').removeClass('fadeOut').addClass('fadeIn');      
+    m.removeClass('moveMain');
+  });
+  $(window).scroll(function(){
+    o.css("top",Math.max(80,260-$(this).scrollTop()));
+  });
+  
+  $(window).resize(function(){
+    getSize(); 
+    if (myWidth >= 1024) {
+      $('header nav').removeClass('shownav');
+    }else{
+      m.removeClass('moveMain');
+      a.css('display', 'block').removeClass('fadeOut');
+      o.css('display', 'none');
+      
+      $('#toc.toc-aside').css('display', 'none');
+        
+    }
+  });
+});
+</script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var ai = $('.article-content>iframe'),
+      ae = $('.article-content>embed'),
+      t  = $('#toc'),
+      ta = $('#toc.toc-aside'),
+      o  = $('.openaside'),
+      c  = $('.closeaside');
+  if(ai.length>0){
+    ai.wrap('<div class="video-container" />');
+  };
+  if(ae.length>0){
+   ae.wrap('<div class="video-container" />');
+  };
+  c.click(function(){
+    ta.css('display', 'block').addClass('fadeIn');
+  });
+  o.click(function(){
+    ta.css('display', 'none');
+  });
+  $(window).scroll(function(){
+    ta.css("top",Math.max(140,320-$(this).scrollTop()));
+  });
+});
+</script>
+
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var $this = $('.share'),
+      url = $this.attr('data-url'),
+      encodedUrl = encodeURIComponent(url),
+      title = $this.attr('data-title'),
+      tsina = $this.attr('data-tsina'),
+      description = $this.attr('description');
+  var html = [
+  '<div class="hoverqrcode clearfix"></div>',
+  '<a class="overlay" id="qrcode"></a>',
+  '<a href="https://www.facebook.com/sharer.php?u=' + encodedUrl + '" class="article-share-facebook" target="_blank" title="Facebook"></a>',
+  '<a href="https://twitter.com/intent/tweet?url=' + encodedUrl + '" class="article-share-twitter" target="_blank" title="Twitter"></a>',
+  '<a href="#qrcode" class="article-share-qrcode" title="微信"></a>',
+  '<a href="http://widget.renren.com/dialog/share?resourceUrl=' + encodedUrl + '&srcUrl=' + encodedUrl + '&title=' + title +'" class="article-share-renren" target="_blank" title="人人"></a>',
+  '<a href="http://service.weibo.com/share/share.php?title='+title+'&url='+encodedUrl +'&ralateUid='+ tsina +'&searchPic=true&style=number' +'" class="article-share-weibo" target="_blank" title="微博"></a>',
+  '<span title="Share to"></span>'
+  ].join('');
+  $this.append(html);
+
+  $('.hoverqrcode').hide();
+
+  var myWidth = 0;
+  function updatehoverqrcode(){
+    if( typeof( window.innerWidth ) == 'number' ) {
+      myWidth = window.innerWidth;
+    } else if( document.documentElement && document.documentElement.clientWidth) {
+      myWidth = document.documentElement.clientWidth;
+    };
+    var qrsize = myWidth > 1024 ? 200:100;
+    var options = {render: 'image', size: qrsize, fill: '#2ca6cb', text: url, radius: 0.5, quiet: 1};
+    var p = $('.article-share-qrcode').position();
+    $('.hoverqrcode').empty().css('width', qrsize).css('height', qrsize)
+                          .css('left', p.left-qrsize/2+20).css('top', p.top-qrsize-10)
+                          .qrcode(options);
+  };
+  $(window).resize(function(){
+    $('.hoverqrcode').hide();
+  });
+  $('.article-share-qrcode').click(function(){
+    updatehoverqrcode();
+    $('.hoverqrcode').toggle();
+  });
+  $('.article-share-qrcode').hover(function(){}, function(){
+      $('.hoverqrcode').hide();
+  });
+});   
+</script>
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.article-content').each(function(i){
+    $(this).find('img').each(function(){
+      if ($(this).parent().hasClass('fancybox')) return;
+      var alt = this.alt;
+      if (alt) $(this).after('<span class="caption">' + alt + '</span>');
+      $(this).wrap('<a href="' + this.src + '" title="' + alt + '" class="fancybox"></a>');
+    });
+    $(this).find('.fancybox').each(function(){
+      $(this).attr('rel', 'article' + i);
+    });
+  });
+  if($.fancybox){
+    $('.fancybox').fancybox();
+  }
+}); 
+</script>
+
+
+
+<!-- Totop Begin -->
+
+	<div id="totop">
+	<a title="返回顶部"><img src="/img/scrollup.png"/></a>
+	</div>
+	<script src="/js/totop.js"></script>
+
+<!-- Totop End -->
+
+<!-- MathJax Begin -->
+<!-- mathjax config similar to math.stackexchange -->
+
+
+<!-- MathJax End -->
+
+<!-- Tiny_search Begin -->
+
+<!-- Tiny_search End -->
+
+  </body>
+</html>

@@ -1,0 +1,636 @@
+
+ <!DOCTYPE HTML>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  
+    <title>聚类算法综述 | 超级码力</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1,user-scalable=no">
+    
+    <meta name="author" content="Pele Chen">
+    
+
+    
+    <meta name="description" content="聚类是机器学习中一种重要的无监督算法，它试图将数据集中的样本划分为若干个通常不相交的子集，每个子集成为一个“簇”（cluster），理论上来说，每一簇对应一个潜在的概念，但这个概念事先并不知道，需要使用者来把握。本文是常见聚类算法的综述，为了加深理解，大部分算法配有动图。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="聚类算法综述">
+<meta property="og:url" content="http://supercoder.xyz/2019/04/13/about-clustering/index.html">
+<meta property="og:site_name" content="超级码力">
+<meta property="og:description" content="聚类是机器学习中一种重要的无监督算法，它试图将数据集中的样本划分为若干个通常不相交的子集，每个子集成为一个“簇”（cluster），理论上来说，每一簇对应一个潜在的概念，但这个概念事先并不知道，需要使用者来把握。本文是常见聚类算法的综述，为了加深理解，大部分算法配有动图。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://supercoder.xyz/img/about-clustering/sklearn-clustering.png">
+<meta property="og:image" content="http://supercoder.xyz/img/about-clustering/kmeans.gif">
+<meta property="og:image" content="http://supercoder.xyz/img/about-clustering/mean-shift.gif">
+<meta property="og:image" content="http://supercoder.xyz/img/about-clustering/mean-shift2.gif">
+<meta property="og:image" content="http://supercoder.xyz/img/about-clustering/DBSCAN.gif">
+<meta property="og:image" content="http://supercoder.xyz/img/about-clustering/gauss-mix.gif">
+<meta property="og:image" content="http://supercoder.xyz/img/about-clustering/Hierarchical-Agglomerative-Clustering.gif">
+<meta property="og:image" content="http://supercoder.xyz/img/about-clustering/sklearn-clustering.png">
+<meta property="article:published_time" content="2019-04-13T14:26:00.000Z">
+<meta property="article:modified_time" content="2024-04-17T08:28:41.918Z">
+<meta property="article:author" content="Pele Chen">
+<meta property="article:tag" content="Python">
+<meta property="article:tag" content="机器学习">
+<meta property="article:tag" content="聚类">
+<meta property="article:tag" content="sklearn">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://supercoder.xyz/img/about-clustering/sklearn-clustering.png">
+<meta name="twitter:creator" content="@chenpy228">
+
+    
+    <link rel="alternative" href="/atom.xml" title="超级码力" type="application/atom+xml">
+    
+    
+    <link rel="icon" href="/img/favicon.ico">
+    
+    
+    <link rel="apple-touch-icon" href="/img/jacman.jpg">
+    <link rel="apple-touch-icon-precomposed" href="/img/jacman.jpg">
+    
+    
+<link rel="stylesheet" href="/css/style.css">
+<link rel="stylesheet" href="/%02.css">
+<link rel="stylesheet" href="/.css">
+
+<meta name="generator" content="Hexo 5.4.2"></head>
+
+  <body>
+    <header>
+      
+<div>
+		
+			<div id="imglogo">
+				<a href="/"><img src="/img/logo.svg" alt="超级码力" title="超级码力"/></a>
+			</div>
+			
+			<div id="textlogo">
+				<h1 class="site-name"><a href="/" title="超级码力">超级码力</a></h1>
+				<h2 class="blog-motto">Stay hungry, stay foolish!</h2>
+			</div>
+			<div class="navbar"><a class="navbutton navmobile" href="#" title="菜单">
+			</a></div>
+			<nav class="animated">
+				<ul>
+					<ul>
+					 
+						<li><a href="/">首页</a></li>
+					
+						<li><a href="/archives">归档</a></li>
+					
+						<li><a href="/command">命令</a></li>
+					
+						<li><a href="/about">关于</a></li>
+					
+					<li>
+ 					
+						<form class="search">
+							<label>Search</label>
+							<input type="search" id="local-search-input" name="q" autocomplete="off" maxlength="20" placeholder="搜索" />
+						</form>
+					
+					</li>
+				</ul>
+			</nav>			
+</div>
+<div id="local-search-result" class="local-search-result-cls"></div>
+    </header>
+    <div id="container">
+      <div id="main" class="post" itemscope itemprop="blogPost">
+  
+	<article itemprop="articleBody"> 
+		<header class="article-info clearfix">
+  <h1 itemprop="name">
+    
+      <a href="/2019/04/13/about-clustering/" title="聚类算法综述" itemprop="url">聚类算法综述</a>
+  </h1>
+  <p class="article-author">By
+       
+		<a href="/about" title="Pele Chen" target="_blank" itemprop="author">Pele Chen</a>
+		
+  <p class="article-time">
+    <time datetime="2019-04-13T14:26:00.000Z" itemprop="datePublished"> 发表于 Apr 13 2019</time>
+    
+  </p>
+</header>
+	<div class="article-content">
+		
+		<div id="toc" class="toc-article">
+			<strong class="toc-title">文章目录</strong>
+		
+			<ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B8%B8%E8%A7%81%E8%81%9A%E7%B1%BB%E7%AE%97%E6%B3%95"><span class="toc-number">1.</span> <span class="toc-text">常见聚类算法</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#K%E5%9D%87%E5%80%BC%EF%BC%88Kmeans%EF%BC%89"><span class="toc-number">1.1.</span> <span class="toc-text">K均值（Kmeans）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%9D%87%E5%80%BC%E6%BC%82%E7%A7%BB%EF%BC%88Mean-Shift%EF%BC%89"><span class="toc-number">1.2.</span> <span class="toc-text">均值漂移（Mean Shift）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#DBSCAN"><span class="toc-number">1.3.</span> <span class="toc-text">DBSCAN</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%AB%98%E6%96%AF%E6%B7%B7%E5%90%88%E6%A8%A1%E5%9E%8B"><span class="toc-number">1.4.</span> <span class="toc-text">高斯混合模型</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%87%9D%E8%81%9A%E5%B1%82%E6%AC%A1%E8%81%9A%E7%B1%BB"><span class="toc-number">1.5.</span> <span class="toc-text">凝聚层次聚类</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#sklearn%E5%AE%9E%E7%8E%B0"><span class="toc-number">2.</span> <span class="toc-text">sklearn实现</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%82%E8%80%83"><span class="toc-number">3.</span> <span class="toc-text">参考</span></a></li></ol>
+		
+		</div>
+		
+		<img src="/img/about-clustering/sklearn-clustering.png" class="img-topic" />
+
+<p>聚类是机器学习中一种重要的无监督算法，它试图将数据集中的样本划分为若干个通常不相交的子集，每个子集成为一个“簇”（cluster），理论上来说，每一簇对应一个潜在的概念，但这个概念事先并不知道，需要使用者来把握。本文是常见聚类算法的综述，为了加深理解，大部分算法配有动图。</p>
+<span id="more"></span>
+
+<h2 id="常见聚类算法"><a href="#常见聚类算法" class="headerlink" title="常见聚类算法"></a>常见聚类算法</h2><h3 id="K均值（Kmeans）"><a href="#K均值（Kmeans）" class="headerlink" title="K均值（Kmeans）"></a>K均值（Kmeans）</h3><p>这一最著名的聚类算法，主要基于数据点之间的均值和与聚类中心的聚类迭代而成。它主要的优点是十分的高效，由于只需要计算数据点与聚类中心的距离，其计算复杂度只有O(n)。<br><img src="/img/about-clustering/kmeans.gif" alt="K均值"></p>
+<p>1.首先我们需要预先给定聚类的数目同时随机初始化聚类中心。我们可以粗略的观察数据并给出较为准确的聚类数目；<br>2.每一个数据点通过计算与聚类中心的距离了来分类到最邻近的一类中；<br>3.根据分类结果，利用分类后的数据点重新计算聚类中心；<br>4.重复步骤2、3直到聚类中心不再变化。（可以随机初始化不同的聚类中心以选取最好的结果）</p>
+<p>这种方法在理解和实现上都十分简单，但缺点却也非常明显：十分依赖于初始给定的聚类数目；同时随机初始化可能会生成不同的聚类效果，所以它缺乏重复性和连续性。<br>和K均值类似的K中值算法，在计算过程中利用中值来计算聚类中心，使得局外点对它的影响大大减弱；但每一次循环计算中值矢量带来了计算速度的大大下降。</p>
+<h3 id="均值漂移（Mean-Shift）"><a href="#均值漂移（Mean-Shift）" class="headerlink" title="均值漂移（Mean Shift）"></a>均值漂移（Mean Shift）</h3><p>这是一种基于滑动窗口的均值算法，用于寻找数据点中密度最大的区域。其目标是找出每一个类的中心点，并通过计算滑窗内点的均值更新滑窗的中心点。最终消除临近重复值的影响并形成中心点，找到其对应的类别。<br><img src="/img/about-clustering/mean-shift.gif" alt="均值漂移"></p>
+<p>1.首先，以随机选取的点为圆心，r为半径做一个圆形的滑窗。其目标是找出数据点中密度最高点并作为中心；<br>2.在每个迭代后，滑动窗口的中心将向较高密度的方向移动；<br>3.连续移动，直到任何方向的移动都不能增加滑窗中点的数量，此时滑窗收敛；<br>4.将上述步骤在多个滑窗上进行以覆盖所有的点。当多个滑窗收敛重叠时，其经过的点将会通过其滑窗聚类为一个类。</p>
+<p>下图中每一个黑点都代表一个滑窗的中心，他们最终重叠在每一类的中心；<br><img src="/img/about-clustering/mean-shift2.gif" alt="均值漂移"></p>
+<p>与K均值相比最大的优点是，我们无需指定指定聚类数目，聚类中心处于最高密度处也是符合直觉认知的结果。但其最大的缺点在于滑窗大小r的选取，对于结果有着很大的影响。</p>
+<h3 id="DBSCAN"><a href="#DBSCAN" class="headerlink" title="DBSCAN"></a>DBSCAN</h3><p>DBSCAN同样是基于密度的聚类算法，但其原理却与均值漂移大不相同：<br><img src="/img/about-clustering/DBSCAN.gif" alt="DBSCAN"></p>
+<p>1.首先从没有被遍历的任一点开始，利用邻域距离epsilon来获取周围点；<br>2.如果邻域内点的数量满足阈值则此点成为核心点并以此开始新一类的聚类。（如果不是则标记为噪声）；<br>3.其邻域内的所有点也属于同一类，将所有的邻域内点以epsilon为半径进行步骤2的计算；<br>4.重复步骤2、3直到遍历完所有核心点的邻域点；<br>5.此类聚类完成，同时又以任意未遍历点开始步骤1到4直到所有数据点都被处理；<br>6.最终每个数据点都有自己的归属类别或者属于噪声。</p>
+<p>这种方法最大的优点在于无需定义类的数量，其次可以识别出局外点和噪声点，并且可以对任意形状的数据进行聚类。<br>但也存在不可回避的缺点，当数据密度变化剧烈时，不同类别的密度阈值点和领域半径会产生很大的变化。同时在高维空间中准确估计领域半径也是不小的挑战。</p>
+<h3 id="高斯混合模型"><a href="#高斯混合模型" class="headerlink" title="高斯混合模型"></a>高斯混合模型</h3><p>通过假设数据点符合均值和标准差描述的高斯混合模型来实现的。下图以二维情况下为例描述了如何利用最大期望优化算法来获取分布参数的过程：<br><img src="/img/about-clustering/gauss-mix.gif" alt="高斯混合模型"></p>
+<p>1.首先确定聚类的数量，并随机初始化每一个聚类的高斯分布参数；<br>2.通过计算每一个点属于高斯分布的概率来进行聚类。与高斯中心越近的点越有可能属于这个类；<br>3.基于上一步数据点的概率权重，通过最大似然估计的方法计算出每一类数据点最有可能属于这一聚类的高斯参数；<br>4.基于新的高斯参数，重新估计每一点归属各类的概率，重复2，3步骤直到参数不再变化收敛为止。</p>
+<p>在使用高斯混合模型时有两个关键的地方，首先高斯混合模型十分灵活，可以拟合任意形状的椭圆；其次这是一种基于概率的算法，每个点可以拥有属于多类的概率，支持混合属性。</p>
+<h3 id="凝聚层次聚类"><a href="#凝聚层次聚类" class="headerlink" title="凝聚层次聚类"></a>凝聚层次聚类</h3><p>层次聚类法主要有自顶向下和自底向上两种方式。其中自底向上的方式，最初将每个点看做是独立的类别，随后通过一步步的凝聚最后形成独立的一大类，并包含所有的数据点。这会形成一个树形结构，并在这一过程中形成聚类。<br><img src="/img/about-clustering/Hierarchical-Agglomerative-Clustering.gif" alt="凝聚层次聚类"></p>
+<p>1.首先将每一个数据点看成一个类别，通过计算点与点之间的距离将距离近的点归为一个子类，作为下一次聚类的基础；<br>2.每一次迭代将两个元素聚类成一个，上述的子类中距离最近的两两又合并为新的子类。最相近的都被合并在一起；<br>3.重复步骤2直到所有的类别都合并为一个根节点。基于此我们可以选择聚类的数目，并根据树来进行选择。</p>
+<p>层次聚类无需事先指定类的数目，并且对于距离的度量不敏感。这种方法最好的应用在于恢复出数据的层次化结构。但其计算复杂度较高达到了O（n^3）.</p>
+<h2 id="sklearn实现"><a href="#sklearn实现" class="headerlink" title="sklearn实现"></a>sklearn实现</h2><p>sklearn官网(<a target="_blank" rel="noopener" href="http://scikit-learn.org/stable/modules/clustering.html#clustering">http://scikit-learn.org/stable/modules/clustering.html#clustering</a>) 对常见的聚类算法做了汇总比较，结果一目了然，可以看出<strong>DBSCAN</strong>在训练时长和结果上均有优异表现，最终效果如下：<br><img src="/img/about-clustering/sklearn-clustering.png" alt="聚类算法对比"></p>
+<p>实现代码如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> time</span><br><span class="line"><span class="keyword">import</span> warnings</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"><span class="keyword">import</span> matplotlib.pyplot <span class="keyword">as</span> plt</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> sklearn <span class="keyword">import</span> cluster, datasets, mixture</span><br><span class="line"><span class="keyword">from</span> sklearn.neighbors <span class="keyword">import</span> kneighbors_graph</span><br><span class="line"><span class="keyword">from</span> sklearn.preprocessing <span class="keyword">import</span> StandardScaler</span><br><span class="line"><span class="keyword">from</span> itertools <span class="keyword">import</span> cycle, islice</span><br><span class="line"></span><br><span class="line">np.random.seed(<span class="number">0</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># ============</span></span><br><span class="line"><span class="comment"># Generate datasets. We choose the size big enough to see the scalability</span></span><br><span class="line"><span class="comment"># of the algorithms, but not too big to avoid too long running times</span></span><br><span class="line"><span class="comment"># ============</span></span><br><span class="line">n_samples = <span class="number">1500</span></span><br><span class="line">noisy_circles = datasets.make_circles(n_samples=n_samples, factor=<span class="number">.5</span>,</span><br><span class="line">                                      noise=<span class="number">.05</span>)</span><br><span class="line">noisy_moons = datasets.make_moons(n_samples=n_samples, noise=<span class="number">.05</span>)</span><br><span class="line">blobs = datasets.make_blobs(n_samples=n_samples, random_state=<span class="number">8</span>)</span><br><span class="line">no_structure = np.random.rand(n_samples, <span class="number">2</span>), <span class="literal">None</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Anisotropicly distributed data</span></span><br><span class="line">random_state = <span class="number">170</span></span><br><span class="line">X, y = datasets.make_blobs(n_samples=n_samples, random_state=random_state)</span><br><span class="line">transformation = [[<span class="number">0.6</span>, -<span class="number">0.6</span>], [-<span class="number">0.4</span>, <span class="number">0.8</span>]]</span><br><span class="line">X_aniso = np.dot(X, transformation)</span><br><span class="line">aniso = (X_aniso, y)</span><br><span class="line"></span><br><span class="line"><span class="comment"># blobs with varied variances</span></span><br><span class="line">varied = datasets.make_blobs(n_samples=n_samples,</span><br><span class="line">                             cluster_std=[<span class="number">1.0</span>, <span class="number">2.5</span>, <span class="number">0.5</span>],</span><br><span class="line">                             random_state=random_state)</span><br><span class="line"></span><br><span class="line"><span class="comment"># ============</span></span><br><span class="line"><span class="comment"># Set up cluster parameters</span></span><br><span class="line"><span class="comment"># ============</span></span><br><span class="line">plt.figure(figsize=(<span class="number">9</span> * <span class="number">2</span> + <span class="number">3</span>, <span class="number">12.5</span>))</span><br><span class="line">plt.subplots_adjust(left=<span class="number">.02</span>, right=<span class="number">.98</span>, bottom=<span class="number">.001</span>, top=<span class="number">.96</span>, wspace=<span class="number">.05</span>,</span><br><span class="line">                    hspace=<span class="number">.01</span>)</span><br><span class="line"></span><br><span class="line">plot_num = <span class="number">1</span></span><br><span class="line"></span><br><span class="line">default_base = &#123;<span class="string">&#x27;quantile&#x27;</span>: <span class="number">.3</span>,</span><br><span class="line">                <span class="string">&#x27;eps&#x27;</span>: <span class="number">.3</span>,</span><br><span class="line">                <span class="string">&#x27;damping&#x27;</span>: <span class="number">.9</span>,</span><br><span class="line">                <span class="string">&#x27;preference&#x27;</span>: -<span class="number">200</span>,</span><br><span class="line">                <span class="string">&#x27;n_neighbors&#x27;</span>: <span class="number">10</span>,</span><br><span class="line">                <span class="string">&#x27;n_clusters&#x27;</span>: <span class="number">3</span>&#125;</span><br><span class="line"></span><br><span class="line">datasets = [</span><br><span class="line">    (noisy_circles, &#123;<span class="string">&#x27;damping&#x27;</span>: <span class="number">.77</span>, <span class="string">&#x27;preference&#x27;</span>: -<span class="number">240</span>,</span><br><span class="line">                     <span class="string">&#x27;quantile&#x27;</span>: <span class="number">.2</span>, <span class="string">&#x27;n_clusters&#x27;</span>: <span class="number">2</span>&#125;),</span><br><span class="line">    (noisy_moons, &#123;<span class="string">&#x27;damping&#x27;</span>: <span class="number">.75</span>, <span class="string">&#x27;preference&#x27;</span>: -<span class="number">220</span>, <span class="string">&#x27;n_clusters&#x27;</span>: <span class="number">2</span>&#125;),</span><br><span class="line">    (varied, &#123;<span class="string">&#x27;eps&#x27;</span>: <span class="number">.18</span>, <span class="string">&#x27;n_neighbors&#x27;</span>: <span class="number">2</span>&#125;),</span><br><span class="line">    (aniso, &#123;<span class="string">&#x27;eps&#x27;</span>: <span class="number">.15</span>, <span class="string">&#x27;n_neighbors&#x27;</span>: <span class="number">2</span>&#125;),</span><br><span class="line">    (blobs, &#123;&#125;),</span><br><span class="line">    (no_structure, &#123;&#125;)]</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> i_dataset, (dataset, algo_params) <span class="keyword">in</span> <span class="built_in">enumerate</span>(datasets):</span><br><span class="line">    <span class="comment"># update parameters with dataset-specific values</span></span><br><span class="line">    params = default_base.copy()</span><br><span class="line">    params.update(algo_params)</span><br><span class="line"></span><br><span class="line">    X, y = dataset</span><br><span class="line"></span><br><span class="line">    <span class="comment"># normalize dataset for easier parameter selection</span></span><br><span class="line">    X = StandardScaler().fit_transform(X)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># estimate bandwidth for mean shift</span></span><br><span class="line">    bandwidth = cluster.estimate_bandwidth(X, quantile=params[<span class="string">&#x27;quantile&#x27;</span>])</span><br><span class="line"></span><br><span class="line">    <span class="comment"># connectivity matrix for structured Ward</span></span><br><span class="line">    connectivity = kneighbors_graph(</span><br><span class="line">        X, n_neighbors=params[<span class="string">&#x27;n_neighbors&#x27;</span>], include_self=<span class="literal">False</span>)</span><br><span class="line">    <span class="comment"># make connectivity symmetric</span></span><br><span class="line">    connectivity = <span class="number">0.5</span> * (connectivity + connectivity.T)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># ============</span></span><br><span class="line">    <span class="comment"># Create cluster objects</span></span><br><span class="line">    <span class="comment"># ============</span></span><br><span class="line">    ms = cluster.MeanShift(bandwidth=bandwidth, bin_seeding=<span class="literal">True</span>)</span><br><span class="line">    two_means = cluster.MiniBatchKMeans(n_clusters=params[<span class="string">&#x27;n_clusters&#x27;</span>])</span><br><span class="line">    ward = cluster.AgglomerativeClustering(</span><br><span class="line">        n_clusters=params[<span class="string">&#x27;n_clusters&#x27;</span>], linkage=<span class="string">&#x27;ward&#x27;</span>,</span><br><span class="line">        connectivity=connectivity)</span><br><span class="line">    spectral = cluster.SpectralClustering(</span><br><span class="line">        n_clusters=params[<span class="string">&#x27;n_clusters&#x27;</span>], eigen_solver=<span class="string">&#x27;arpack&#x27;</span>,</span><br><span class="line">        affinity=<span class="string">&quot;nearest_neighbors&quot;</span>)</span><br><span class="line">    dbscan = cluster.DBSCAN(eps=params[<span class="string">&#x27;eps&#x27;</span>])</span><br><span class="line">    affinity_propagation = cluster.AffinityPropagation(</span><br><span class="line">        damping=params[<span class="string">&#x27;damping&#x27;</span>], preference=params[<span class="string">&#x27;preference&#x27;</span>])</span><br><span class="line">    average_linkage = cluster.AgglomerativeClustering(</span><br><span class="line">        linkage=<span class="string">&quot;average&quot;</span>, affinity=<span class="string">&quot;cityblock&quot;</span>,</span><br><span class="line">        n_clusters=params[<span class="string">&#x27;n_clusters&#x27;</span>], connectivity=connectivity)</span><br><span class="line">    birch = cluster.Birch(n_clusters=params[<span class="string">&#x27;n_clusters&#x27;</span>])</span><br><span class="line">    gmm = mixture.GaussianMixture(</span><br><span class="line">        n_components=params[<span class="string">&#x27;n_clusters&#x27;</span>], covariance_type=<span class="string">&#x27;full&#x27;</span>)</span><br><span class="line"></span><br><span class="line">    clustering_algorithms = (</span><br><span class="line">        (<span class="string">&#x27;MiniBatchKMeans&#x27;</span>, two_means),</span><br><span class="line">        (<span class="string">&#x27;AffinityPropagation&#x27;</span>, affinity_propagation),</span><br><span class="line">        (<span class="string">&#x27;MeanShift&#x27;</span>, ms),</span><br><span class="line">        (<span class="string">&#x27;SpectralClustering&#x27;</span>, spectral),</span><br><span class="line">        (<span class="string">&#x27;Ward&#x27;</span>, ward),</span><br><span class="line">        (<span class="string">&#x27;AgglomerativeClustering&#x27;</span>, average_linkage),</span><br><span class="line">        (<span class="string">&#x27;DBSCAN&#x27;</span>, dbscan),</span><br><span class="line">        (<span class="string">&#x27;Birch&#x27;</span>, birch),</span><br><span class="line">        (<span class="string">&#x27;GaussianMixture&#x27;</span>, gmm)</span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> name, algorithm <span class="keyword">in</span> clustering_algorithms:</span><br><span class="line">        t0 = time.time()</span><br><span class="line"></span><br><span class="line">        <span class="comment"># catch warnings related to kneighbors_graph</span></span><br><span class="line">        <span class="keyword">with</span> warnings.catch_warnings():</span><br><span class="line">            warnings.filterwarnings(</span><br><span class="line">                <span class="string">&quot;ignore&quot;</span>,</span><br><span class="line">                message=<span class="string">&quot;the number of connected components of the &quot;</span> +</span><br><span class="line">                <span class="string">&quot;connectivity matrix is [0-9]&#123;1,2&#125;&quot;</span> +</span><br><span class="line">                <span class="string">&quot; &gt; 1. Completing it to avoid stopping the tree early.&quot;</span>,</span><br><span class="line">                category=UserWarning)</span><br><span class="line">            warnings.filterwarnings(</span><br><span class="line">                <span class="string">&quot;ignore&quot;</span>,</span><br><span class="line">                message=<span class="string">&quot;Graph is not fully connected, spectral embedding&quot;</span> +</span><br><span class="line">                <span class="string">&quot; may not work as expected.&quot;</span>,</span><br><span class="line">                category=UserWarning)</span><br><span class="line">            algorithm.fit(X)</span><br><span class="line"></span><br><span class="line">        t1 = time.time()</span><br><span class="line">        <span class="keyword">if</span> <span class="built_in">hasattr</span>(algorithm, <span class="string">&#x27;labels_&#x27;</span>):</span><br><span class="line">            y_pred = algorithm.labels_.astype(np.<span class="built_in">int</span>)</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            y_pred = algorithm.predict(X)</span><br><span class="line"></span><br><span class="line">        plt.subplot(<span class="built_in">len</span>(datasets), <span class="built_in">len</span>(clustering_algorithms), plot_num)</span><br><span class="line">        <span class="keyword">if</span> i_dataset == <span class="number">0</span>:</span><br><span class="line">            plt.title(name, size=<span class="number">18</span>)</span><br><span class="line"></span><br><span class="line">        colors = np.array(<span class="built_in">list</span>(islice(cycle([<span class="string">&#x27;#377eb8&#x27;</span>, <span class="string">&#x27;#ff7f00&#x27;</span>, <span class="string">&#x27;#4daf4a&#x27;</span>,</span><br><span class="line">                                             <span class="string">&#x27;#f781bf&#x27;</span>, <span class="string">&#x27;#a65628&#x27;</span>, <span class="string">&#x27;#984ea3&#x27;</span>,</span><br><span class="line">                                             <span class="string">&#x27;#999999&#x27;</span>, <span class="string">&#x27;#e41a1c&#x27;</span>, <span class="string">&#x27;#dede00&#x27;</span>]),</span><br><span class="line">                                      <span class="built_in">int</span>(<span class="built_in">max</span>(y_pred) + <span class="number">1</span>))))</span><br><span class="line">        <span class="comment"># add black color for outliers (if any)</span></span><br><span class="line">        colors = np.append(colors, [<span class="string">&quot;#000000&quot;</span>])</span><br><span class="line">        plt.scatter(X[:, <span class="number">0</span>], X[:, <span class="number">1</span>], s=<span class="number">10</span>, color=colors[y_pred])</span><br><span class="line"></span><br><span class="line">        plt.xlim(-<span class="number">2.5</span>, <span class="number">2.5</span>)</span><br><span class="line">        plt.ylim(-<span class="number">2.5</span>, <span class="number">2.5</span>)</span><br><span class="line">        plt.xticks(())</span><br><span class="line">        plt.yticks(())</span><br><span class="line">        plt.text(<span class="number">.99</span>, <span class="number">.01</span>, (<span class="string">&#x27;%.2fs&#x27;</span> % (t1 - t0)).lstrip(<span class="string">&#x27;0&#x27;</span>),</span><br><span class="line">                 transform=plt.gca().transAxes, size=<span class="number">15</span>,</span><br><span class="line">                 horizontalalignment=<span class="string">&#x27;right&#x27;</span>)</span><br><span class="line">        plot_num += <span class="number">1</span></span><br><span class="line"></span><br><span class="line">plt.show()</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ul>
+<li><a target="_blank" rel="noopener" href="http://m.elecfans.com/article/683501.html">机器学习中五种常用的聚类算法</a></li>
+<li>《机器学习》周志华 第九章</li>
+<li>sklearn官网</li>
+</ul>
+  
+	</div>
+		<footer class="article-footer clearfix">
+<div class="article-catetags">
+
+<div class="article-categories">
+  <span></span>
+  <a class="article-category-link" href="/categories/technology/">技术</a>
+</div>
+
+
+  <div class="article-tags">
+  
+  <span></span> <a href="/tags/Python/">Python</a><a href="/tags/机器学习/">机器学习</a><a href="/tags/聚类/">聚类</a><a href="/tags/sklearn/">sklearn</a>
+  </div>
+
+</div>
+
+
+
+	<div class="article-share" id="share">
+	
+	  <div data-url="http://supercoder.xyz/2019/04/13/about-clustering/" data-title="聚类算法综述 | 超级码力" data-tsina="1374354697" class="share clearfix">
+	  </div>
+	
+	</div>
+
+
+</footer>
+
+   	       
+	</article>
+	
+<nav class="article-nav clearfix">
+ 
+ <div class="prev" >
+ <a href="/2019/04/27/ai-cheatsheets/" title="AI速查图">
+  <strong>上一篇：</strong><br/>
+  <span>
+  AI速查图</span>
+</a>
+</div>
+
+
+<div class="next">
+<a href="/2019/03/31/pyspark-model-analysis/"  title="pyspark模型结构解析">
+ <strong>下一篇：</strong><br/> 
+ <span>pyspark模型结构解析
+</span>
+</a>
+</div>
+
+</nav>
+
+	
+
+
+</div>  
+      <div class="openaside"><a class="navbutton" href="#" title="显示侧边栏"></a></div>
+
+  <div id="toc" class="toc-aside">
+  <strong class="toc-title">文章目录</strong>
+ 
+ <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B8%B8%E8%A7%81%E8%81%9A%E7%B1%BB%E7%AE%97%E6%B3%95"><span class="toc-number">1.</span> <span class="toc-text">常见聚类算法</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#K%E5%9D%87%E5%80%BC%EF%BC%88Kmeans%EF%BC%89"><span class="toc-number">1.1.</span> <span class="toc-text">K均值（Kmeans）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%9D%87%E5%80%BC%E6%BC%82%E7%A7%BB%EF%BC%88Mean-Shift%EF%BC%89"><span class="toc-number">1.2.</span> <span class="toc-text">均值漂移（Mean Shift）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#DBSCAN"><span class="toc-number">1.3.</span> <span class="toc-text">DBSCAN</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%AB%98%E6%96%AF%E6%B7%B7%E5%90%88%E6%A8%A1%E5%9E%8B"><span class="toc-number">1.4.</span> <span class="toc-text">高斯混合模型</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%87%9D%E8%81%9A%E5%B1%82%E6%AC%A1%E8%81%9A%E7%B1%BB"><span class="toc-number">1.5.</span> <span class="toc-text">凝聚层次聚类</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#sklearn%E5%AE%9E%E7%8E%B0"><span class="toc-number">2.</span> <span class="toc-text">sklearn实现</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%82%E8%80%83"><span class="toc-number">3.</span> <span class="toc-text">参考</span></a></li></ol>
+ 
+  </div>
+
+<div id="asidepart">
+<div class="closeaside"><a class="closebutton" href="#" title="隐藏侧边栏"></a></div>
+<aside class="clearfix">
+
+  
+<div class="categorieslist">
+	<p class="asidetitle">分类</p>
+		<ul>
+		
+		  
+			<li><a href="/categories/书评/" title="书评">书评<sup>7</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/tool/" title="工具">工具<sup>5</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/technology/" title="技术">技术<sup>10</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/diary/" title="日记">日记<sup>2</sup></a></li>
+		  
+		
+		</ul>
+</div>
+
+
+  
+<div class="tagslist">
+	<p class="asidetitle">标签</p>
+		<ul class="clearfix">
+		
+			
+				<li><a href="/tags/Python/" title="Python">Python<sup>5</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/机器学习/" title="机器学习">机器学习<sup>4</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Linux/" title="Linux">Linux<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/多线程/" title="多线程">多线程<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/性能/" title="性能">性能<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/C/" title="C++">C++<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/历史/" title="历史">历史<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Valgrind/" title="Valgrind">Valgrind<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/内存/" title="内存">内存<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Web/" title="Web">Web<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/聚类/" title="聚类">聚类<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/sklearn/" title="sklearn">sklearn<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/nodejs/" title="nodejs">nodejs<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/hexo/" title="hexo">hexo<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/GitHub/" title="GitHub">GitHub<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/HBase/" title="HBase">HBase<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/SNAPPY/" title="SNAPPY">SNAPPY<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Windows/" title="Windows">Windows<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/git/" title="git">git<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/区块链/" title="区块链">区块链<sup>1</sup></a></li>
+			
+		
+		</ul>
+</div>
+
+
+  <div class="linkslist">
+  <p class="asidetitle">常用链接</p>
+    <ul>
+        
+          <li>
+            
+            	<a href="http://blog.csdn.net/chenpy228" target="_blank" title=" 我的CSDN博客">我的CSDN博客</a>
+            
+          </li>
+        
+          <li>
+            
+            	<a href="https://coolshell.cn/" target="_blank" title=" 酷壳">酷壳</a>
+            
+          </li>
+        
+          <li>
+            
+            	<a href="http://www.ruanyifeng.com/blog/" target="_blank" title=" 阮一峰的网络日志">阮一峰的网络日志</a>
+            
+          </li>
+        
+          <li>
+            
+            	<a href="http://calvin1978.blogcn.com/" target="_blank" title=" 江南白衣">江南白衣</a>
+            
+          </li>
+        
+          <li>
+            
+            	<a href="https://blog.codingnow.com/" target="_blank" title=" 云风的BLOG">云风的BLOG</a>
+            
+          </li>
+        
+    </ul>
+</div>
+
+  
+  <div class="tagcloudlist">
+    <p class="asidetitle">标签云</p>
+    <div class="tagcloudlist clearfix">
+       <a href="/tags/C/" style="font-size: 12.5px;">C++</a> <a href="/tags/Edge/" style="font-size: 10px;">Edge</a> <a href="/tags/GitHub/" style="font-size: 10px;">GitHub</a> <a href="/tags/HBase/" style="font-size: 10px;">HBase</a> <a href="/tags/Java/" style="font-size: 10px;">Java</a> <a href="/tags/Linux/" style="font-size: 15px;">Linux</a> <a href="/tags/Python/" style="font-size: 20px;">Python</a> <a href="/tags/SNAPPY/" style="font-size: 10px;">SNAPPY</a> <a href="/tags/Source-Insight/" style="font-size: 10px;">Source Insight</a> <a href="/tags/Valgrind/" style="font-size: 10px;">Valgrind</a> <a href="/tags/Web/" style="font-size: 10px;">Web</a> <a href="/tags/Windows/" style="font-size: 10px;">Windows</a> <a href="/tags/etcd/" style="font-size: 10px;">etcd</a> <a href="/tags/git/" style="font-size: 10px;">git</a> <a href="/tags/hexo/" style="font-size: 10px;">hexo</a> <a href="/tags/nodejs/" style="font-size: 10px;">nodejs</a> <a href="/tags/pyspark/" style="font-size: 10px;">pyspark</a> <a href="/tags/sklearn/" style="font-size: 10px;">sklearn</a> <a href="/tags/%E4%B9%BE%E9%9A%86/" style="font-size: 10px;">乾隆</a> <a href="/tags/%E4%BF%AE%E5%85%BB/" style="font-size: 10px;">修养</a> <a href="/tags/%E5%86%85%E5%AD%98/" style="font-size: 10px;">内存</a> <a href="/tags/%E5%8C%BA%E5%9D%97%E9%93%BE/" style="font-size: 10px;">区块链</a> <a href="/tags/%E5%8D%8E%E5%A4%8F%E6%96%87%E6%98%8E/" style="font-size: 10px;">华夏文明</a> <a href="/tags/%E5%8E%86%E5%8F%B2/" style="font-size: 12.5px;">历史</a> <a href="/tags/%E5%90%88%E4%BD%9C/" style="font-size: 10px;">合作</a> <a href="/tags/%E5%90%8C%E6%AD%A5/" style="font-size: 10px;">同步</a> <a href="/tags/%E5%90%8C%E7%90%86%E5%BF%83/" style="font-size: 10px;">同理心</a> <a href="/tags/%E5%95%86%E4%B8%9A/" style="font-size: 10px;">商业</a> <a href="/tags/%E5%A4%9A%E7%BA%BF%E7%A8%8B/" style="font-size: 15px;">多线程</a> <a href="/tags/%E5%AD%94%E5%AD%90/" style="font-size: 10px;">孔子</a> <a href="/tags/%E5%AD%A6%E4%B9%A0/" style="font-size: 10px;">学习</a> <a href="/tags/%E5%BF%83%E7%90%86/" style="font-size: 10px;">心理</a> <a href="/tags/%E6%80%A7%E8%83%BD/" style="font-size: 12.5px;">性能</a> <a href="/tags/%E6%88%90%E9%95%BF%E5%9E%8B%E6%80%9D%E7%BB%B4/" style="font-size: 10px;">成长型思维</a> <a href="/tags/%E6%8A%80%E6%9C%AF/" style="font-size: 10px;">技术</a> <a href="/tags/%E6%95%99%E8%82%B2/" style="font-size: 10px;">教育</a> <a href="/tags/%E6%96%87%E6%98%8E/" style="font-size: 10px;">文明</a> <a href="/tags/%E6%9C%AA%E6%9D%A5/" style="font-size: 10px;">未来</a> <a href="/tags/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0/" style="font-size: 17.5px;">机器学习</a> <a href="/tags/%E6%B0%91%E6%97%8F%E8%9E%8D%E5%90%88/" style="font-size: 10px;">民族融合</a> <a href="/tags/%E6%B8%85%E6%9C%9D/" style="font-size: 10px;">清朝</a> <a href="/tags/%E8%81%9A%E7%B1%BB/" style="font-size: 10px;">聚类</a> <a href="/tags/%E8%87%AA%E5%8D%91/" style="font-size: 10px;">自卑</a> <a href="/tags/%E8%8D%89%E5%8E%9F%E6%96%87%E6%98%8E/" style="font-size: 10px;">草原文明</a> <a href="/tags/%E8%AE%BA%E8%AF%AD/" style="font-size: 10px;">论语</a> <a href="/tags/%E9%81%93%E5%BE%B7/" style="font-size: 10px;">道德</a>
+    </div>
+  </div>
+
+
+  <div class="rsspart">
+	<a href="/atom.xml" target="_blank" title="rss">RSS 订阅</a>
+</div>
+
+</aside>
+</div>
+    </div>
+    <footer><div id="footer" >
+	
+	<div class="line">
+		<span></span>
+		<div class="author"></div>
+	</div>
+	
+	
+	<section class="info">
+		<p> Welcome to my blog, I&#39;m Pele Chen! <br/>
+			I hope you like the writings here, having fan!</p>
+	</section>
+	 
+	<div class="social-font" class="clearfix">
+		
+		<a href="http://weibo.com/1374354697" target="_blank" class="icon-weibo" title="微博"></a>
+		
+		
+		<a href="https://github.com/chenpy228" target="_blank" class="icon-github" title="github"></a>
+		
+		
+		
+		<a href="https://twitter.com/chenpy228" target="_blank" class="icon-twitter" title="twitter"></a>
+		
+		
+		
+		
+		
+		
+		
+		<a href="mailto:chpei@foxmail.com" target="_blank" class="icon-email" title="Email Me"></a>
+		
+	</div>
+			
+		
+				<div class="cc-license">
+          <a href="http://creativecommons.org/licenses/by-nc-sa/4.0" class="cc-opacity" target="_blank">
+            <img src="/img/cc-by-nc-sa.svg" alt="Creative Commons" />
+          </a>
+        </div>
+    
+
+		<p class="copyright">
+		Powered by <a href="http://hexo.io" target="_blank" title="hexo">hexo</a> | Theme by <a href="https://github.com/wuchong/jacman" target="_blank" title="Jacman">Jacman</a> | Hosted by <a target="_blank" rel="noopener" href="https://coding.net" style="font-weight: bold">Coding Pages</a> © 2013-2024
+		
+		<a href="/about" target="_blank" title="Pele Chen">Pele Chen</a>
+		
+
+        <!-- Analytics Begin -->
+        
+
+
+
+
+<script type="text/javascript">
+var cnzz_protocol = (("https:" == document.location.protocol) ? " https://" : " http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_1253436290'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s6.cnzz.com/z_stat.php%3Fid%3D1253436290%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));
+</script>
+
+        <!-- Analytics End -->
+		</p>
+</div>
+</footer>
+    <script src="/js/jquery-2.0.3.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+<script src="/js/jquery.qrcode-0.12.0.min.js"></script>
+<script src="/js/search.js"></script>
+<script src="/js/load.js"></script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.navbar').click(function(){
+    $('header nav').toggleClass('shownav');
+  });
+  var myWidth = 0;
+  function getSize(){
+    if( typeof( window.innerWidth ) == 'number' ) {
+      myWidth = window.innerWidth;
+    } else if( document.documentElement && document.documentElement.clientWidth) {
+      myWidth = document.documentElement.clientWidth;
+    };
+  };
+  var m = $('#main'),
+      a = $('#asidepart'),
+      c = $('.closeaside'),
+      o = $('.openaside');
+  c.click(function(){
+    a.addClass('fadeOut').css('display', 'none');
+    o.css('display', 'block').addClass('fadeIn');
+    m.addClass('moveMain');
+  });
+  o.click(function(){
+    o.css('display', 'none').removeClass('beforeFadeIn');
+    a.css('display', 'block').removeClass('fadeOut').addClass('fadeIn');      
+    m.removeClass('moveMain');
+  });
+  $(window).scroll(function(){
+    o.css("top",Math.max(80,260-$(this).scrollTop()));
+  });
+  
+  $(window).resize(function(){
+    getSize(); 
+    if (myWidth >= 1024) {
+      $('header nav').removeClass('shownav');
+    }else{
+      m.removeClass('moveMain');
+      a.css('display', 'block').removeClass('fadeOut');
+      o.css('display', 'none');
+      
+      $('#toc.toc-aside').css('display', 'none');
+        
+    }
+  });
+});
+</script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var ai = $('.article-content>iframe'),
+      ae = $('.article-content>embed'),
+      t  = $('#toc'),
+      ta = $('#toc.toc-aside'),
+      o  = $('.openaside'),
+      c  = $('.closeaside');
+  if(ai.length>0){
+    ai.wrap('<div class="video-container" />');
+  };
+  if(ae.length>0){
+   ae.wrap('<div class="video-container" />');
+  };
+  c.click(function(){
+    ta.css('display', 'block').addClass('fadeIn');
+  });
+  o.click(function(){
+    ta.css('display', 'none');
+  });
+  $(window).scroll(function(){
+    ta.css("top",Math.max(140,320-$(this).scrollTop()));
+  });
+});
+</script>
+
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var $this = $('.share'),
+      url = $this.attr('data-url'),
+      encodedUrl = encodeURIComponent(url),
+      title = $this.attr('data-title'),
+      tsina = $this.attr('data-tsina'),
+      description = $this.attr('description');
+  var html = [
+  '<div class="hoverqrcode clearfix"></div>',
+  '<a class="overlay" id="qrcode"></a>',
+  '<a href="https://www.facebook.com/sharer.php?u=' + encodedUrl + '" class="article-share-facebook" target="_blank" title="Facebook"></a>',
+  '<a href="https://twitter.com/intent/tweet?url=' + encodedUrl + '" class="article-share-twitter" target="_blank" title="Twitter"></a>',
+  '<a href="#qrcode" class="article-share-qrcode" title="微信"></a>',
+  '<a href="http://widget.renren.com/dialog/share?resourceUrl=' + encodedUrl + '&srcUrl=' + encodedUrl + '&title=' + title +'" class="article-share-renren" target="_blank" title="人人"></a>',
+  '<a href="http://service.weibo.com/share/share.php?title='+title+'&url='+encodedUrl +'&ralateUid='+ tsina +'&searchPic=true&style=number' +'" class="article-share-weibo" target="_blank" title="微博"></a>',
+  '<span title="Share to"></span>'
+  ].join('');
+  $this.append(html);
+
+  $('.hoverqrcode').hide();
+
+  var myWidth = 0;
+  function updatehoverqrcode(){
+    if( typeof( window.innerWidth ) == 'number' ) {
+      myWidth = window.innerWidth;
+    } else if( document.documentElement && document.documentElement.clientWidth) {
+      myWidth = document.documentElement.clientWidth;
+    };
+    var qrsize = myWidth > 1024 ? 200:100;
+    var options = {render: 'image', size: qrsize, fill: '#2ca6cb', text: url, radius: 0.5, quiet: 1};
+    var p = $('.article-share-qrcode').position();
+    $('.hoverqrcode').empty().css('width', qrsize).css('height', qrsize)
+                          .css('left', p.left-qrsize/2+20).css('top', p.top-qrsize-10)
+                          .qrcode(options);
+  };
+  $(window).resize(function(){
+    $('.hoverqrcode').hide();
+  });
+  $('.article-share-qrcode').click(function(){
+    updatehoverqrcode();
+    $('.hoverqrcode').toggle();
+  });
+  $('.article-share-qrcode').hover(function(){}, function(){
+      $('.hoverqrcode').hide();
+  });
+});   
+</script>
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.article-content').each(function(i){
+    $(this).find('img').each(function(){
+      if ($(this).parent().hasClass('fancybox')) return;
+      var alt = this.alt;
+      if (alt) $(this).after('<span class="caption">' + alt + '</span>');
+      $(this).wrap('<a href="' + this.src + '" title="' + alt + '" class="fancybox"></a>');
+    });
+    $(this).find('.fancybox').each(function(){
+      $(this).attr('rel', 'article' + i);
+    });
+  });
+  if($.fancybox){
+    $('.fancybox').fancybox();
+  }
+}); 
+</script>
+
+
+
+<!-- Totop Begin -->
+
+	<div id="totop">
+	<a title="返回顶部"><img src="/img/scrollup.png"/></a>
+	</div>
+	<script src="/js/totop.js"></script>
+
+<!-- Totop End -->
+
+<!-- MathJax Begin -->
+<!-- mathjax config similar to math.stackexchange -->
+
+
+<!-- MathJax End -->
+
+<!-- Tiny_search Begin -->
+
+<!-- Tiny_search End -->
+
+  </body>
+</html>

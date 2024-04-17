@@ -1,0 +1,638 @@
+
+ <!DOCTYPE HTML>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  
+    <title>到处是“坑”的strtok()—解读strtok()的隐含特性 | 超级码力</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1,user-scalable=no">
+    
+    <meta name="author" content="Pele Chen">
+    
+
+    
+    <meta name="description" content="在用C&#x2F;C++实现字符串处理逻辑时，strtok函数的使用非常广泛，其主要作用是按照给定的字符集分隔字符串，并返回各子字符串。由于该函数的使用有诸多限制，如果使用不当就会造成很多“坑”，因此本文首先介绍那些经常误踩的坑，然后通过分析源代码，解读该函数的诸多隐含特性，以便对该函数有个全面的理解，不再被坑。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="到处是“坑”的strtok()—解读strtok()的隐含特性">
+<meta property="og:url" content="http://supercoder.xyz/2014/12/24/the-implied-characteristics-of-strtok/index.html">
+<meta property="og:site_name" content="超级码力">
+<meta property="og:description" content="在用C&#x2F;C++实现字符串处理逻辑时，strtok函数的使用非常广泛，其主要作用是按照给定的字符集分隔字符串，并返回各子字符串。由于该函数的使用有诸多限制，如果使用不当就会造成很多“坑”，因此本文首先介绍那些经常误踩的坑，然后通过分析源代码，解读该函数的诸多隐含特性，以便对该函数有个全面的理解，不再被坑。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://supercoder.xyz/img/sth-about-strtok/bug.png">
+<meta property="article:published_time" content="2014-12-24T13:54:54.000Z">
+<meta property="article:modified_time" content="2024-04-17T08:28:41.922Z">
+<meta property="article:author" content="Pele Chen">
+<meta property="article:tag" content="多线程">
+<meta property="article:tag" content="C++">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://supercoder.xyz/img/sth-about-strtok/bug.png">
+<meta name="twitter:creator" content="@chenpy228">
+
+    
+    <link rel="alternative" href="/atom.xml" title="超级码力" type="application/atom+xml">
+    
+    
+    <link rel="icon" href="/img/favicon.ico">
+    
+    
+    <link rel="apple-touch-icon" href="/img/jacman.jpg">
+    <link rel="apple-touch-icon-precomposed" href="/img/jacman.jpg">
+    
+    
+<link rel="stylesheet" href="/css/style.css">
+<link rel="stylesheet" href="/%02.css">
+<link rel="stylesheet" href="/.css">
+
+<meta name="generator" content="Hexo 5.4.2"></head>
+
+  <body>
+    <header>
+      
+<div>
+		
+			<div id="imglogo">
+				<a href="/"><img src="/img/logo.svg" alt="超级码力" title="超级码力"/></a>
+			</div>
+			
+			<div id="textlogo">
+				<h1 class="site-name"><a href="/" title="超级码力">超级码力</a></h1>
+				<h2 class="blog-motto">Stay hungry, stay foolish!</h2>
+			</div>
+			<div class="navbar"><a class="navbutton navmobile" href="#" title="菜单">
+			</a></div>
+			<nav class="animated">
+				<ul>
+					<ul>
+					 
+						<li><a href="/">首页</a></li>
+					
+						<li><a href="/archives">归档</a></li>
+					
+						<li><a href="/command">命令</a></li>
+					
+						<li><a href="/about">关于</a></li>
+					
+					<li>
+ 					
+						<form class="search">
+							<label>Search</label>
+							<input type="search" id="local-search-input" name="q" autocomplete="off" maxlength="20" placeholder="搜索" />
+						</form>
+					
+					</li>
+				</ul>
+			</nav>			
+</div>
+<div id="local-search-result" class="local-search-result-cls"></div>
+    </header>
+    <div id="container">
+      <div id="main" class="post" itemscope itemprop="blogPost">
+  
+	<article itemprop="articleBody"> 
+		<header class="article-info clearfix">
+  <h1 itemprop="name">
+    
+      <a href="/2014/12/24/the-implied-characteristics-of-strtok/" title="到处是“坑”的strtok()—解读strtok()的隐含特性" itemprop="url">到处是“坑”的strtok()—解读strtok()的隐含特性</a>
+  </h1>
+  <p class="article-author">By
+       
+		<a href="/about" title="Pele Chen" target="_blank" itemprop="author">Pele Chen</a>
+		
+  <p class="article-time">
+    <time datetime="2014-12-24T13:54:54.000Z" itemprop="datePublished"> 发表于 Dec 24 2014</time>
+    
+  </p>
+</header>
+	<div class="article-content">
+		
+		<div id="toc" class="toc-article">
+			<strong class="toc-title">文章目录</strong>
+		
+			<ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%82%A3%E4%BA%9B%E5%B9%B4%E4%B8%80%E8%B5%B7%E8%B8%A9%E8%BF%87%E7%9A%84%E5%9D%91"><span class="toc-number">1.</span> <span class="toc-text">那些年一起踩过的坑</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#TOP1-%E4%B8%8D%E5%8F%AF%E9%87%8D%E5%85%A5"><span class="toc-number">1.1.</span> <span class="toc-text">TOP1 不可重入</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#TOP2-%E6%BA%90%E5%AD%97%E7%AC%A6%E4%B8%B2%E4%BC%9A%E8%A2%AB%E4%BF%AE%E6%94%B9"><span class="toc-number">1.2.</span> <span class="toc-text">TOP2 源字符串会被修改</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#TOP3-%E8%BF%9E%E7%BB%AD%E7%9A%84%E5%88%86%E9%9A%94%E7%AC%A6%E8%A2%AB%E5%BD%93%E5%81%9A%E4%B8%80%E4%B8%AA%E5%88%86%E9%9A%94%E7%AC%A6%E5%A4%84%E7%90%86"><span class="toc-number">1.3.</span> <span class="toc-text">TOP3 连续的分隔符被当做一个分隔符处理</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#TOP4-%E5%AD%97%E7%AC%A6%E4%B8%B2%E9%A6%96%E5%B0%BE%E7%9A%84%E5%88%86%E9%9A%94%E7%AC%A6%E4%BC%9A%E8%A2%AB%E5%BF%BD%E7%95%A5"><span class="toc-number">1.4.</span> <span class="toc-text">TOP4 字符串首尾的分隔符会被忽略</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%9C%9F%E7%9B%B8%E5%8F%AA%E6%9C%89%E4%B8%80%E4%B8%AA"><span class="toc-number">2.</span> <span class="toc-text">真相只有一个</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%80%BB%E7%BB%93"><span class="toc-number">3.</span> <span class="toc-text">总结</span></a></li></ol>
+		
+		</div>
+		
+		<img src="/img/sth-about-strtok/bug.png" class="img-topic" />
+
+<p>在用C/C++实现字符串处理逻辑时，strtok函数的使用非常广泛，其主要作用是按照给定的字符集分隔字符串，并返回各子字符串。由于该函数的使用有诸多限制，如果使用不当就会造成很多“坑”，因此本文首先介绍那些经常误踩的坑，然后通过分析源代码，解读该函数的诸多隐含特性，以便对该函数有个全面的理解，不再被坑。</p>
+<span id="more"></span>
+
+<h2 id="那些年一起踩过的坑"><a href="#那些年一起踩过的坑" class="headerlink" title="那些年一起踩过的坑"></a>那些年一起踩过的坑</h2><h3 id="TOP1-不可重入"><a href="#TOP1-不可重入" class="headerlink" title="TOP1 不可重入"></a>TOP1 不可重入</h3><p>目前大部分程序都是在多线程环境下运行的，因此函数的可重入性就显得尤为重要。下面示例的本意是，先按照;分隔句子并输出，然后再按照空格分隔单词并输出，可结果呢？</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;string.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">(<span class="type">void</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="type">char</span>  szTest[]  = <span class="string">&quot;Hello world;I&#x27;m Pele&quot;</span>; <span class="comment">/* 以;作为句子的分隔符，以空格作为单词的分隔符 */</span></span><br><span class="line">    <span class="type">char</span> *pSentence = <span class="literal">NULL</span>;</span><br><span class="line">    <span class="type">char</span> *pWord     = <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 先分隔句子 */</span></span><br><span class="line">    pSentence = <span class="built_in">strtok</span>(szTest, <span class="string">&quot;;&quot;</span>);</span><br><span class="line">    <span class="keyword">while</span> (<span class="literal">NULL</span> != pSentence)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;The sentence is %s.\n&quot;</span>, pSentence);</span><br><span class="line"></span><br><span class="line">        <span class="comment">/* 再分隔单词 */</span></span><br><span class="line">        pWord = <span class="built_in">strtok</span>(pSentence, <span class="string">&quot; &quot;</span>);</span><br><span class="line">        <span class="keyword">while</span> (<span class="literal">NULL</span> != pWord)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="built_in">printf</span>(<span class="string">&quot;The word is %s.\n&quot;</span>, pWord);</span><br><span class="line">            pWord = <span class="built_in">strtok</span>(<span class="literal">NULL</span>, <span class="string">&quot; &quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        pSentence = <span class="built_in">strtok</span>(<span class="literal">NULL</span>, <span class="string">&quot;;&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>预期结果如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">$ gcc test_strtok.c</span><br><span class="line">$ ./a.out</span><br><span class="line">The sentence is Hello world.</span><br><span class="line">The word is Hello.</span><br><span class="line">The word is world.</span><br><span class="line">The sentence is I&#x27;m Pele.</span><br><span class="line">The word is I&#x27;m.</span><br><span class="line">The word is Pele.</span><br><span class="line">$</span><br></pre></td></tr></table></figure>
+
+<p>可实际结果如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">$ gcc test_strtok.c</span><br><span class="line">$ ./a.out</span><br><span class="line">The sentence is Hello world.</span><br><span class="line">The word is Hello.</span><br><span class="line">The word is world.</span><br><span class="line">$</span><br></pre></td></tr></table></figure>
+<p>实际告诉我们：<strong>strtok不可重入</strong>。</p>
+<h3 id="TOP2-源字符串会被修改"><a href="#TOP2-源字符串会被修改" class="headerlink" title="TOP2 源字符串会被修改"></a>TOP2 源字符串会被修改</h3><p>如果一个字符串在我们的监控之外被修改了，那么可能会发生一系列诡异的事，而我们却全然不知。请看如下案例：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;string.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">(<span class="type">void</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="type">char</span>  szTest[]  = <span class="string">&quot;Hello world;I&#x27;m Pele&quot;</span>;</span><br><span class="line">    <span class="type">char</span> *pSentence = <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;The original string is %s.\n&quot;</span>, szTest);</span><br><span class="line"></span><br><span class="line">    pSentence = <span class="built_in">strtok</span>(szTest, <span class="string">&quot;;&quot;</span>);</span><br><span class="line">    <span class="keyword">while</span> (<span class="literal">NULL</span> != pSentence)</span><br><span class="line">    &#123;</span><br><span class="line">        pSentence = <span class="built_in">strtok</span>(<span class="literal">NULL</span>, <span class="string">&quot;;&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;The final string is %s.\n&quot;</span>, szTest);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>预期结果如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ gcc test_strtok.c</span><br><span class="line">$ ./a.out</span><br><span class="line">The original string is Hello world;I&#x27;m Pele.</span><br><span class="line">The final string is Hello world;I&#x27;m Pele.</span><br><span class="line">$</span><br></pre></td></tr></table></figure>
+
+<p>可实际结果如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ gcc test_strtok.c</span><br><span class="line">$ ./a.out</span><br><span class="line">The original string is Hello world;I&#x27;m Pele.</span><br><span class="line">The final string is Hello world.</span><br><span class="line">$</span><br></pre></td></tr></table></figure>
+<p>实际告诉我们：<strong>你传入的字符串会被strtok修改</strong>。</p>
+<h3 id="TOP3-连续的分隔符被当做一个分隔符处理"><a href="#TOP3-连续的分隔符被当做一个分隔符处理" class="headerlink" title="TOP3 连续的分隔符被当做一个分隔符处理"></a>TOP3 连续的分隔符被当做一个分隔符处理</h3><p>如果两个分隔符连续出现，那么在分隔的时候，你是希望分隔出一个空字符串，还是希望strtok忽略掉多余的分隔符呢？请看strtok给我们的答案：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;string.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">(<span class="type">void</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="type">char</span>  szTest[]  = <span class="string">&quot;Hello world;;I&#x27;m Pele&quot;</span>;  <span class="comment">/* 连续使用两个;分隔语句 */</span></span><br><span class="line">    <span class="type">char</span> *pSentence = <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">    pSentence = <span class="built_in">strtok</span>(szTest, <span class="string">&quot;;&quot;</span>);</span><br><span class="line">    <span class="keyword">while</span> (<span class="literal">NULL</span> != pSentence)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;The sentence is %s.\n&quot;</span>, pSentence);</span><br><span class="line">        pSentence = <span class="built_in">strtok</span>(<span class="literal">NULL</span>, <span class="string">&quot;;&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>实际结果如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ gcc test_strtok.c</span><br><span class="line">$ ./a.out</span><br><span class="line">The sentence is Hello world.</span><br><span class="line">The sentence is I&#x27;m Pele.</span><br><span class="line">$</span><br></pre></td></tr></table></figure>
+<p>实际告诉我们：<strong>连续出现的分隔符只被处理一次</strong>。</p>
+<h3 id="TOP4-字符串首尾的分隔符会被忽略"><a href="#TOP4-字符串首尾的分隔符会被忽略" class="headerlink" title="TOP4 字符串首尾的分隔符会被忽略"></a>TOP4 字符串首尾的分隔符会被忽略</h3><p>你希望将字符串首尾的分隔符忽略掉吗？如果不希望，那么请慎用strtok，请看:</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;string.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">(<span class="type">void</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="type">char</span>  szTest[]  = <span class="string">&quot;;Hello world;I&#x27;m Pele;;&quot;</span>;</span><br><span class="line">    <span class="type">char</span> *pSentence = <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">    pSentence = <span class="built_in">strtok</span>(szTest, <span class="string">&quot;;&quot;</span>);</span><br><span class="line">    <span class="keyword">while</span> (<span class="literal">NULL</span> != pSentence)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;The sentence is %s.\n&quot;</span>, pSentence);</span><br><span class="line">        pSentence = <span class="built_in">strtok</span>(<span class="literal">NULL</span>, <span class="string">&quot;;&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>实际结果如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ gcc test_strtok.c</span><br><span class="line">$ ./a.out</span><br><span class="line">The sentence is Hello world.</span><br><span class="line">The sentence is I&#x27;m Pele.</span><br><span class="line">$</span><br></pre></td></tr></table></figure>
+<p>实际告诉我们：<strong>字符串首尾的分隔符会被忽略</strong>。</p>
+<h2 id="真相只有一个"><a href="#真相只有一个" class="headerlink" title="真相只有一个"></a>真相只有一个</h2><p>下面的代码取自glibc-2.20的<code>strtok.c</code>文件，未做任何删改，中文注释为笔者添加，用于说明造成以上坑的原因。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;string.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">char</span> *olds; <span class="comment">/* 使用了全局变量，因此该函数不可重入--TOP1坑 */</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">undef</span> strtok</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">ifndef</span> STRTOK</span></span><br><span class="line"><span class="meta"># <span class="keyword">define</span> STRTOK strtok</span></span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment">/* Parse S into tokens separated by characters in DELIM.</span></span><br><span class="line"><span class="comment">   If S is NULL, the last string strtok() was called with is</span></span><br><span class="line"><span class="comment">   used.  For example:</span></span><br><span class="line"><span class="comment">    char s[] = &quot;-abc-=-def&quot;;</span></span><br><span class="line"><span class="comment">    x = strtok(s, &quot;-&quot;);     // x = &quot;abc&quot;</span></span><br><span class="line"><span class="comment">    x = strtok(NULL, &quot;-=&quot;);     // x = &quot;def&quot;</span></span><br><span class="line"><span class="comment">    x = strtok(NULL, &quot;=&quot;);      // x = NULL</span></span><br><span class="line"><span class="comment">        // s = &quot;abc\0=-def\0&quot;</span></span><br><span class="line"><span class="comment">*/</span></span><br><span class="line"><span class="function"><span class="type">char</span> *</span></span><br><span class="line"><span class="function"><span class="title">STRTOK</span> <span class="params">(<span class="type">char</span> *s, <span class="type">const</span> <span class="type">char</span> *delim)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="type">char</span> *token;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (s == <span class="literal">NULL</span>)</span><br><span class="line">    s = olds;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* 跳过了字符串前面的分隔符，如果字符串只剩下尾部的分隔符，跳过前导符相当于忽略尾部的分隔符--TOP4坑 */</span></span><br><span class="line">  <span class="comment">/* Scan leading delimiters.  */</span>  </span><br><span class="line">  s += <span class="built_in">strspn</span> (s, delim);</span><br><span class="line">  <span class="keyword">if</span> (*s == <span class="string">&#x27;\0&#x27;</span>)</span><br><span class="line">    &#123;</span><br><span class="line">      olds = s;</span><br><span class="line">      <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Find the end of the token.  */</span></span><br><span class="line">  token = s;</span><br><span class="line">  s = <span class="built_in">strpbrk</span> (token, delim);  </span><br><span class="line">  <span class="keyword">if</span> (s == <span class="literal">NULL</span>)</span><br><span class="line">    <span class="comment">/* This token finishes the string.  */</span></span><br><span class="line">    olds = __rawmemchr (token, <span class="string">&#x27;\0&#x27;</span>);</span><br><span class="line">  <span class="keyword">else</span> <span class="comment">/* 找到一个分隔符就返回，下次进入该函数会跳过前导分隔符，此为TOP3坑 */</span></span><br><span class="line">    &#123;      </span><br><span class="line">      <span class="comment">/* Terminate the token and make OLDS point past it.  */</span></span><br><span class="line">      *s = <span class="string">&#x27;\0&#x27;</span>;        <span class="comment">/* 将分隔符所在位置置0，此为TOP2坑 */</span></span><br><span class="line">      olds = s + <span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">  <span class="keyword">return</span> token;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><ul>
+<li>尽量<strong>使用可重入版的strtok，Windows平台下为strtok_s，Linux平台下为strtok_r</strong>。</li>
+<li>牢记strtok函数族的分隔规则：<strong>忽略字符串前后的分隔符，连续的分隔符被当做一个处理</strong>。</li>
+<li>在使用strtok前，<strong>请对源字符串进行备份</strong>，除非你可以接受字符串被修改这一事实。</li>
+</ul>
+  
+	</div>
+		<footer class="article-footer clearfix">
+<div class="article-catetags">
+
+<div class="article-categories">
+  <span></span>
+  <a class="article-category-link" href="/categories/technology/">技术</a>
+</div>
+
+
+  <div class="article-tags">
+  
+  <span></span> <a href="/tags/多线程/">多线程</a><a href="/tags/C/">C++</a>
+  </div>
+
+</div>
+
+
+
+	<div class="article-share" id="share">
+	
+	  <div data-url="http://supercoder.xyz/2014/12/24/the-implied-characteristics-of-strtok/" data-title="到处是“坑”的strtok()—解读strtok()的隐含特性 | 超级码力" data-tsina="1374354697" class="share clearfix">
+	  </div>
+	
+	</div>
+
+
+</footer>
+
+   	       
+	</article>
+	
+<nav class="article-nav clearfix">
+ 
+ <div class="prev" >
+ <a href="/2015/04/18/Introduce-to-Valgrind-tool/" title="Linux下内存检测、多线程并发及性能分析工具Valgrind简介">
+  <strong>上一篇：</strong><br/>
+  <span>
+  Linux下内存检测、多线程并发及性能分析工具Valgrind简介</span>
+</a>
+</div>
+
+
+<div class="next">
+<a href="/2014/10/07/let-SI-support-cpp-formate-cc/"  title="让source insight支持C++源文件*.cc">
+ <strong>下一篇：</strong><br/> 
+ <span>让source insight支持C++源文件*.cc
+</span>
+</a>
+</div>
+
+</nav>
+
+	
+
+
+</div>  
+      <div class="openaside"><a class="navbutton" href="#" title="显示侧边栏"></a></div>
+
+  <div id="toc" class="toc-aside">
+  <strong class="toc-title">文章目录</strong>
+ 
+ <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%82%A3%E4%BA%9B%E5%B9%B4%E4%B8%80%E8%B5%B7%E8%B8%A9%E8%BF%87%E7%9A%84%E5%9D%91"><span class="toc-number">1.</span> <span class="toc-text">那些年一起踩过的坑</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#TOP1-%E4%B8%8D%E5%8F%AF%E9%87%8D%E5%85%A5"><span class="toc-number">1.1.</span> <span class="toc-text">TOP1 不可重入</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#TOP2-%E6%BA%90%E5%AD%97%E7%AC%A6%E4%B8%B2%E4%BC%9A%E8%A2%AB%E4%BF%AE%E6%94%B9"><span class="toc-number">1.2.</span> <span class="toc-text">TOP2 源字符串会被修改</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#TOP3-%E8%BF%9E%E7%BB%AD%E7%9A%84%E5%88%86%E9%9A%94%E7%AC%A6%E8%A2%AB%E5%BD%93%E5%81%9A%E4%B8%80%E4%B8%AA%E5%88%86%E9%9A%94%E7%AC%A6%E5%A4%84%E7%90%86"><span class="toc-number">1.3.</span> <span class="toc-text">TOP3 连续的分隔符被当做一个分隔符处理</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#TOP4-%E5%AD%97%E7%AC%A6%E4%B8%B2%E9%A6%96%E5%B0%BE%E7%9A%84%E5%88%86%E9%9A%94%E7%AC%A6%E4%BC%9A%E8%A2%AB%E5%BF%BD%E7%95%A5"><span class="toc-number">1.4.</span> <span class="toc-text">TOP4 字符串首尾的分隔符会被忽略</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%9C%9F%E7%9B%B8%E5%8F%AA%E6%9C%89%E4%B8%80%E4%B8%AA"><span class="toc-number">2.</span> <span class="toc-text">真相只有一个</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%80%BB%E7%BB%93"><span class="toc-number">3.</span> <span class="toc-text">总结</span></a></li></ol>
+ 
+  </div>
+
+<div id="asidepart">
+<div class="closeaside"><a class="closebutton" href="#" title="隐藏侧边栏"></a></div>
+<aside class="clearfix">
+
+  
+<div class="categorieslist">
+	<p class="asidetitle">分类</p>
+		<ul>
+		
+		  
+			<li><a href="/categories/书评/" title="书评">书评<sup>7</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/tool/" title="工具">工具<sup>5</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/technology/" title="技术">技术<sup>10</sup></a></li>
+		  
+		
+		  
+			<li><a href="/categories/diary/" title="日记">日记<sup>2</sup></a></li>
+		  
+		
+		</ul>
+</div>
+
+
+  
+<div class="tagslist">
+	<p class="asidetitle">标签</p>
+		<ul class="clearfix">
+		
+			
+				<li><a href="/tags/Python/" title="Python">Python<sup>5</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/机器学习/" title="机器学习">机器学习<sup>4</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Linux/" title="Linux">Linux<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/多线程/" title="多线程">多线程<sup>3</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/性能/" title="性能">性能<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/C/" title="C++">C++<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/历史/" title="历史">历史<sup>2</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Valgrind/" title="Valgrind">Valgrind<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/内存/" title="内存">内存<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Web/" title="Web">Web<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/聚类/" title="聚类">聚类<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/sklearn/" title="sklearn">sklearn<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/nodejs/" title="nodejs">nodejs<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/hexo/" title="hexo">hexo<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/GitHub/" title="GitHub">GitHub<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/HBase/" title="HBase">HBase<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/SNAPPY/" title="SNAPPY">SNAPPY<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Windows/" title="Windows">Windows<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/git/" title="git">git<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/区块链/" title="区块链">区块链<sup>1</sup></a></li>
+			
+		
+		</ul>
+</div>
+
+
+  <div class="linkslist">
+  <p class="asidetitle">常用链接</p>
+    <ul>
+        
+          <li>
+            
+            	<a href="http://blog.csdn.net/chenpy228" target="_blank" title=" 我的CSDN博客">我的CSDN博客</a>
+            
+          </li>
+        
+          <li>
+            
+            	<a href="https://coolshell.cn/" target="_blank" title=" 酷壳">酷壳</a>
+            
+          </li>
+        
+          <li>
+            
+            	<a href="http://www.ruanyifeng.com/blog/" target="_blank" title=" 阮一峰的网络日志">阮一峰的网络日志</a>
+            
+          </li>
+        
+          <li>
+            
+            	<a href="http://calvin1978.blogcn.com/" target="_blank" title=" 江南白衣">江南白衣</a>
+            
+          </li>
+        
+          <li>
+            
+            	<a href="https://blog.codingnow.com/" target="_blank" title=" 云风的BLOG">云风的BLOG</a>
+            
+          </li>
+        
+    </ul>
+</div>
+
+  
+  <div class="tagcloudlist">
+    <p class="asidetitle">标签云</p>
+    <div class="tagcloudlist clearfix">
+       <a href="/tags/C/" style="font-size: 12.5px;">C++</a> <a href="/tags/Edge/" style="font-size: 10px;">Edge</a> <a href="/tags/GitHub/" style="font-size: 10px;">GitHub</a> <a href="/tags/HBase/" style="font-size: 10px;">HBase</a> <a href="/tags/Java/" style="font-size: 10px;">Java</a> <a href="/tags/Linux/" style="font-size: 15px;">Linux</a> <a href="/tags/Python/" style="font-size: 20px;">Python</a> <a href="/tags/SNAPPY/" style="font-size: 10px;">SNAPPY</a> <a href="/tags/Source-Insight/" style="font-size: 10px;">Source Insight</a> <a href="/tags/Valgrind/" style="font-size: 10px;">Valgrind</a> <a href="/tags/Web/" style="font-size: 10px;">Web</a> <a href="/tags/Windows/" style="font-size: 10px;">Windows</a> <a href="/tags/etcd/" style="font-size: 10px;">etcd</a> <a href="/tags/git/" style="font-size: 10px;">git</a> <a href="/tags/hexo/" style="font-size: 10px;">hexo</a> <a href="/tags/nodejs/" style="font-size: 10px;">nodejs</a> <a href="/tags/pyspark/" style="font-size: 10px;">pyspark</a> <a href="/tags/sklearn/" style="font-size: 10px;">sklearn</a> <a href="/tags/%E4%B9%BE%E9%9A%86/" style="font-size: 10px;">乾隆</a> <a href="/tags/%E4%BF%AE%E5%85%BB/" style="font-size: 10px;">修养</a> <a href="/tags/%E5%86%85%E5%AD%98/" style="font-size: 10px;">内存</a> <a href="/tags/%E5%8C%BA%E5%9D%97%E9%93%BE/" style="font-size: 10px;">区块链</a> <a href="/tags/%E5%8D%8E%E5%A4%8F%E6%96%87%E6%98%8E/" style="font-size: 10px;">华夏文明</a> <a href="/tags/%E5%8E%86%E5%8F%B2/" style="font-size: 12.5px;">历史</a> <a href="/tags/%E5%90%88%E4%BD%9C/" style="font-size: 10px;">合作</a> <a href="/tags/%E5%90%8C%E6%AD%A5/" style="font-size: 10px;">同步</a> <a href="/tags/%E5%90%8C%E7%90%86%E5%BF%83/" style="font-size: 10px;">同理心</a> <a href="/tags/%E5%95%86%E4%B8%9A/" style="font-size: 10px;">商业</a> <a href="/tags/%E5%A4%9A%E7%BA%BF%E7%A8%8B/" style="font-size: 15px;">多线程</a> <a href="/tags/%E5%AD%94%E5%AD%90/" style="font-size: 10px;">孔子</a> <a href="/tags/%E5%AD%A6%E4%B9%A0/" style="font-size: 10px;">学习</a> <a href="/tags/%E5%BF%83%E7%90%86/" style="font-size: 10px;">心理</a> <a href="/tags/%E6%80%A7%E8%83%BD/" style="font-size: 12.5px;">性能</a> <a href="/tags/%E6%88%90%E9%95%BF%E5%9E%8B%E6%80%9D%E7%BB%B4/" style="font-size: 10px;">成长型思维</a> <a href="/tags/%E6%8A%80%E6%9C%AF/" style="font-size: 10px;">技术</a> <a href="/tags/%E6%95%99%E8%82%B2/" style="font-size: 10px;">教育</a> <a href="/tags/%E6%96%87%E6%98%8E/" style="font-size: 10px;">文明</a> <a href="/tags/%E6%9C%AA%E6%9D%A5/" style="font-size: 10px;">未来</a> <a href="/tags/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0/" style="font-size: 17.5px;">机器学习</a> <a href="/tags/%E6%B0%91%E6%97%8F%E8%9E%8D%E5%90%88/" style="font-size: 10px;">民族融合</a> <a href="/tags/%E6%B8%85%E6%9C%9D/" style="font-size: 10px;">清朝</a> <a href="/tags/%E8%81%9A%E7%B1%BB/" style="font-size: 10px;">聚类</a> <a href="/tags/%E8%87%AA%E5%8D%91/" style="font-size: 10px;">自卑</a> <a href="/tags/%E8%8D%89%E5%8E%9F%E6%96%87%E6%98%8E/" style="font-size: 10px;">草原文明</a> <a href="/tags/%E8%AE%BA%E8%AF%AD/" style="font-size: 10px;">论语</a> <a href="/tags/%E9%81%93%E5%BE%B7/" style="font-size: 10px;">道德</a>
+    </div>
+  </div>
+
+
+  <div class="rsspart">
+	<a href="/atom.xml" target="_blank" title="rss">RSS 订阅</a>
+</div>
+
+</aside>
+</div>
+    </div>
+    <footer><div id="footer" >
+	
+	<div class="line">
+		<span></span>
+		<div class="author"></div>
+	</div>
+	
+	
+	<section class="info">
+		<p> Welcome to my blog, I&#39;m Pele Chen! <br/>
+			I hope you like the writings here, having fan!</p>
+	</section>
+	 
+	<div class="social-font" class="clearfix">
+		
+		<a href="http://weibo.com/1374354697" target="_blank" class="icon-weibo" title="微博"></a>
+		
+		
+		<a href="https://github.com/chenpy228" target="_blank" class="icon-github" title="github"></a>
+		
+		
+		
+		<a href="https://twitter.com/chenpy228" target="_blank" class="icon-twitter" title="twitter"></a>
+		
+		
+		
+		
+		
+		
+		
+		<a href="mailto:chpei@foxmail.com" target="_blank" class="icon-email" title="Email Me"></a>
+		
+	</div>
+			
+		
+				<div class="cc-license">
+          <a href="http://creativecommons.org/licenses/by-nc-sa/4.0" class="cc-opacity" target="_blank">
+            <img src="/img/cc-by-nc-sa.svg" alt="Creative Commons" />
+          </a>
+        </div>
+    
+
+		<p class="copyright">
+		Powered by <a href="http://hexo.io" target="_blank" title="hexo">hexo</a> | Theme by <a href="https://github.com/wuchong/jacman" target="_blank" title="Jacman">Jacman</a> | Hosted by <a target="_blank" rel="noopener" href="https://coding.net" style="font-weight: bold">Coding Pages</a> © 2013-2024
+		
+		<a href="/about" target="_blank" title="Pele Chen">Pele Chen</a>
+		
+
+        <!-- Analytics Begin -->
+        
+
+
+
+
+<script type="text/javascript">
+var cnzz_protocol = (("https:" == document.location.protocol) ? " https://" : " http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_1253436290'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s6.cnzz.com/z_stat.php%3Fid%3D1253436290%26show%3Dpic' type='text/javascript'%3E%3C/script%3E"));
+</script>
+
+        <!-- Analytics End -->
+		</p>
+</div>
+</footer>
+    <script src="/js/jquery-2.0.3.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+<script src="/js/jquery.qrcode-0.12.0.min.js"></script>
+<script src="/js/search.js"></script>
+<script src="/js/load.js"></script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.navbar').click(function(){
+    $('header nav').toggleClass('shownav');
+  });
+  var myWidth = 0;
+  function getSize(){
+    if( typeof( window.innerWidth ) == 'number' ) {
+      myWidth = window.innerWidth;
+    } else if( document.documentElement && document.documentElement.clientWidth) {
+      myWidth = document.documentElement.clientWidth;
+    };
+  };
+  var m = $('#main'),
+      a = $('#asidepart'),
+      c = $('.closeaside'),
+      o = $('.openaside');
+  c.click(function(){
+    a.addClass('fadeOut').css('display', 'none');
+    o.css('display', 'block').addClass('fadeIn');
+    m.addClass('moveMain');
+  });
+  o.click(function(){
+    o.css('display', 'none').removeClass('beforeFadeIn');
+    a.css('display', 'block').removeClass('fadeOut').addClass('fadeIn');      
+    m.removeClass('moveMain');
+  });
+  $(window).scroll(function(){
+    o.css("top",Math.max(80,260-$(this).scrollTop()));
+  });
+  
+  $(window).resize(function(){
+    getSize(); 
+    if (myWidth >= 1024) {
+      $('header nav').removeClass('shownav');
+    }else{
+      m.removeClass('moveMain');
+      a.css('display', 'block').removeClass('fadeOut');
+      o.css('display', 'none');
+      
+      $('#toc.toc-aside').css('display', 'none');
+        
+    }
+  });
+});
+</script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var ai = $('.article-content>iframe'),
+      ae = $('.article-content>embed'),
+      t  = $('#toc'),
+      ta = $('#toc.toc-aside'),
+      o  = $('.openaside'),
+      c  = $('.closeaside');
+  if(ai.length>0){
+    ai.wrap('<div class="video-container" />');
+  };
+  if(ae.length>0){
+   ae.wrap('<div class="video-container" />');
+  };
+  c.click(function(){
+    ta.css('display', 'block').addClass('fadeIn');
+  });
+  o.click(function(){
+    ta.css('display', 'none');
+  });
+  $(window).scroll(function(){
+    ta.css("top",Math.max(140,320-$(this).scrollTop()));
+  });
+});
+</script>
+
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var $this = $('.share'),
+      url = $this.attr('data-url'),
+      encodedUrl = encodeURIComponent(url),
+      title = $this.attr('data-title'),
+      tsina = $this.attr('data-tsina'),
+      description = $this.attr('description');
+  var html = [
+  '<div class="hoverqrcode clearfix"></div>',
+  '<a class="overlay" id="qrcode"></a>',
+  '<a href="https://www.facebook.com/sharer.php?u=' + encodedUrl + '" class="article-share-facebook" target="_blank" title="Facebook"></a>',
+  '<a href="https://twitter.com/intent/tweet?url=' + encodedUrl + '" class="article-share-twitter" target="_blank" title="Twitter"></a>',
+  '<a href="#qrcode" class="article-share-qrcode" title="微信"></a>',
+  '<a href="http://widget.renren.com/dialog/share?resourceUrl=' + encodedUrl + '&srcUrl=' + encodedUrl + '&title=' + title +'" class="article-share-renren" target="_blank" title="人人"></a>',
+  '<a href="http://service.weibo.com/share/share.php?title='+title+'&url='+encodedUrl +'&ralateUid='+ tsina +'&searchPic=true&style=number' +'" class="article-share-weibo" target="_blank" title="微博"></a>',
+  '<span title="Share to"></span>'
+  ].join('');
+  $this.append(html);
+
+  $('.hoverqrcode').hide();
+
+  var myWidth = 0;
+  function updatehoverqrcode(){
+    if( typeof( window.innerWidth ) == 'number' ) {
+      myWidth = window.innerWidth;
+    } else if( document.documentElement && document.documentElement.clientWidth) {
+      myWidth = document.documentElement.clientWidth;
+    };
+    var qrsize = myWidth > 1024 ? 200:100;
+    var options = {render: 'image', size: qrsize, fill: '#2ca6cb', text: url, radius: 0.5, quiet: 1};
+    var p = $('.article-share-qrcode').position();
+    $('.hoverqrcode').empty().css('width', qrsize).css('height', qrsize)
+                          .css('left', p.left-qrsize/2+20).css('top', p.top-qrsize-10)
+                          .qrcode(options);
+  };
+  $(window).resize(function(){
+    $('.hoverqrcode').hide();
+  });
+  $('.article-share-qrcode').click(function(){
+    updatehoverqrcode();
+    $('.hoverqrcode').toggle();
+  });
+  $('.article-share-qrcode').hover(function(){}, function(){
+      $('.hoverqrcode').hide();
+  });
+});   
+</script>
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.article-content').each(function(i){
+    $(this).find('img').each(function(){
+      if ($(this).parent().hasClass('fancybox')) return;
+      var alt = this.alt;
+      if (alt) $(this).after('<span class="caption">' + alt + '</span>');
+      $(this).wrap('<a href="' + this.src + '" title="' + alt + '" class="fancybox"></a>');
+    });
+    $(this).find('.fancybox').each(function(){
+      $(this).attr('rel', 'article' + i);
+    });
+  });
+  if($.fancybox){
+    $('.fancybox').fancybox();
+  }
+}); 
+</script>
+
+
+
+<!-- Totop Begin -->
+
+	<div id="totop">
+	<a title="返回顶部"><img src="/img/scrollup.png"/></a>
+	</div>
+	<script src="/js/totop.js"></script>
+
+<!-- Totop End -->
+
+<!-- MathJax Begin -->
+<!-- mathjax config similar to math.stackexchange -->
+
+
+<!-- MathJax End -->
+
+<!-- Tiny_search Begin -->
+
+<!-- Tiny_search End -->
+
+  </body>
+</html>
